@@ -8,12 +8,23 @@ import UserProfile from "../UserDashboard/UserProfile/UserProfile";
 import UserChatbox from "../UserDashboard/UserChatbox/UserChatbox";
 import ChangePassword from "../UserDashboard/ChangePassword/ChangePassword";
 import SellerDetails from "../AuthLayout/SellerDetails/SellerDetails";
+import HomePage from "../Pages/HomePage/HomePage";
+import SearchPage from "../Pages/SearchPage/SearchPage";
+import ItemDetailsPage from "../Pages/ItemDetailsPage/ItemDetailsPage";
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <ParentLayout />,
     children: [
+      {
+        path: "/",
+        element: <HomePage />,
+      },
+      {
+        path: "search",
+        element: <SearchPage />,
+      },
       {
         path: "signup",
         element: <SignUp />,
@@ -35,6 +46,12 @@ export const router = createBrowserRouter([
         path: "user-profile",
         element: <SignUp />,
       },
+
+      {
+        path: "item-details/:id",
+        element: <ItemDetailsPage />,
+      },
+
       // if the role is user then show user dashboard layout after login or signup ..............User Dashboard Routes
       {
         path: "user-dashboard",
