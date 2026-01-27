@@ -1,9 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
-import ParentLayout from "../ParentLayout/ParentLayout";
+import ParentLayout from "../Layouts/ParentLayout";
 import SignUp from "../AuthLayout/SignUp/SignUp";
 import Login from "../AuthLayout/Login/Login";
 import RegistrationDone from "../AuthLayout/RegistrationDone/RegistrationDone";
-import UserDashboardLayout from "../UserDashboard/UserDashboardLayout";
+import UserDashboardLayout from "../Layouts/UserDashboardLayout";
 import UserProfile from "../UserDashboard/UserProfile/UserProfile";
 import UserChatbox from "../UserDashboard/UserChatbox/UserChatbox";
 import ChangePassword from "../UserDashboard/ChangePassword/ChangePassword";
@@ -11,6 +11,9 @@ import SellerDetails from "../AuthLayout/SellerDetails/SellerDetails";
 import HomePage from "../Pages/HomePage/HomePage";
 import SearchPage from "../Pages/SearchPage/SearchPage";
 import ItemDetailsPage from "../Pages/ItemDetailsPage/ItemDetailsPage";
+// import VerifyOtp from "@/AuthLayout/SignUp/_components/verifyOtp";
+import VerifyRegisterOtp from "@/AuthLayout/SignUp/_components/verifyOtp";
+import ForgotPassword from "@/AuthLayout/ForgotPassword/ForgotPassword";
 
 export const router = createBrowserRouter([
   {
@@ -26,8 +29,16 @@ export const router = createBrowserRouter([
         element: <SearchPage />,
       },
       {
-        path: "signup",
+        path: "register",
         element: <SignUp />,
+      },
+      {
+        path: "forgot-password" ,
+        element: <ForgotPassword />
+      },
+      {
+        path: "verify-otp",
+        element: <VerifyRegisterOtp />
       },
       {
         path: "login",
