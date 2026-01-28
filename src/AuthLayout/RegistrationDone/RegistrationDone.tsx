@@ -1,5 +1,5 @@
-function RegistrationDone() {
+function SellerRegistrationDone() {
   return <div>RegistrationDone</div>;
 }
 
-export default RegistrationDone;
+export default SellerRegistrationDone;
