@@ -8,12 +8,12 @@ import UserProfile from "../UserDashboard/UserProfile/UserProfile";
 import UserChatbox from "../UserDashboard/UserChatbox/UserChatbox";
 import ChangePassword from "../UserDashboard/ChangePassword/ChangePassword";
 import SellerDetails from "../AuthLayout/SellerDetails/SellerDetails";
-import HomePage from "../Pages/HomePage/HomePage";
-import SearchPage from "../Pages/SearchPage/SearchPage";
-import ItemDetailsPage from "../Pages/ItemDetailsPage/ItemDetailsPage";
 // import VerifyOtp from "@/AuthLayout/SignUp/_components/verifyOtp";
 import VerifyRegisterOtp from "@/AuthLayout/SignUp/_components/verifyOtp";
 import ForgotPassword from "@/AuthLayout/ForgotPassword/ForgotPassword";
+import HomePage from "@/main/user/Pages/HomePage/HomePage";
+import SearchPage from "@/main/user/Pages/SearchPage/SearchPage";
+import ItemDetailsPage from "@/main/user/Pages/ItemDetailsPage/ItemDetailsPage";
 
 export const router = createBrowserRouter([
   {
