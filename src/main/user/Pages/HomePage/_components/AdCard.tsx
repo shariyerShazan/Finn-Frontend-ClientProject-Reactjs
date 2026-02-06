@@ -1,13 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // import React from "react";
 import { Heart, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 // Functional Component with Prisma Props
 const AdCard = ({ ad }: { ad: any }) => {
   const displayPrice = ad.price || ad.basePrice || ad.releasePrice || 0;
+  const navigate = useNavigate()
 
   return (
-    <div className=" transition-all duration-300 group cursor-pointer overflow-hidden">
+    <div
+      onClick={() => navigate("/item-details/hhh")}
+      className=" transition-all duration-300 group cursor-pointer overflow-hidden"
+    >
       {/* Image Section */}
       <div className="relative h-56 ">
         <div className="overflow-hidden h-56 rounded-3xl">

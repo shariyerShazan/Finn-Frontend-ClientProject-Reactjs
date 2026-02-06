@@ -11,7 +11,7 @@ interface Props {
 
 const CommonPagination = ({ currentPage, totalPages, onPageChange }: Props) => {
   return (
-    <div className="flex items-center justify-between w-full mt-12 pb-10 px-2">
+    <div className="flex items-center justify-between w-full my-3 px-2">
       {/* 📝 Left Side: Status Text */}
       <div className="text-sm font-medium text-slate-500 bg-slate-50 px-4 py-2 rounded-full border border-slate-100">
         Showing Page{" "}
