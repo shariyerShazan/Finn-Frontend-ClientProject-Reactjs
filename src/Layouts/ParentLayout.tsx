@@ -3,13 +3,13 @@ import { Outlet } from "react-router-dom";
 
 function ParentLayout() {
   return (
-    <div>
+    <div className="">
       <div className="fixed w-full top-0 z-50">
-         <Navbar />
+        <Navbar />
       </div>
-        <div className="mt-25">
-           <Outlet />
-        </div>
+      <div className="mt-18 w-[90%] mx-auto">
+        <Outlet />
+      </div>
     </div>
   );
 }
