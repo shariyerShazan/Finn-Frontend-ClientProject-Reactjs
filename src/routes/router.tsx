@@ -14,6 +14,18 @@ import ForgotPassword from "@/AuthLayout/ForgotPassword/ForgotPassword";
 import HomePage from "@/main/user/Pages/HomePage/HomePage";
 import SearchPage from "@/main/user/Pages/SearchPage/SearchPage";
 import ItemDetailsPage from "@/main/user/Pages/ItemDetailsPage/ItemDetailsPage";
+import AdminDashboardLayout from "@/Layouts/AdminDashboardLayout";
+import AdminOverview from "@/main/admin/pages/overview/AdminOverview";
+import AllBuyers from "@/main/admin/pages/allUsers/AllBuyers";
+import AllSellers from "@/main/admin/pages/allSellers/AllSellers";
+// import ViewUser from "@/main/admin/_components/viewUser/ViewUser";
+import ViewBuyerD from "@/main/admin/pages/allUsers/_components/ViewBuyerD";
+import ViewSellerD from "@/main/admin/pages/allSellers/_components/ViewSellerD";
+import AdminReport from "@/main/admin/pages/report/AdminReport";
+import ReportDetails from "@/main/admin/pages/report/_components/ReportDetails";
+import AdminTransactions from "@/main/admin/pages/Transactions/AdminTransactions";
+import Category from "@/main/admin/pages/Category/Category/Category";
+import SubCategory from "@/main/admin/pages/Category/SubCategory/SubCategory";
 
 export const router = createBrowserRouter([
   {
@@ -33,12 +45,12 @@ export const router = createBrowserRouter([
         element: <SignUp />,
       },
       {
-        path: "forgot-password" ,
-        element: <ForgotPassword />
+        path: "forgot-password",
+        element: <ForgotPassword />,
       },
       {
         path: "verify-otp",
-        element: <VerifyRegisterOtp />
+        element: <VerifyRegisterOtp />,
       },
       {
         path: "login",
@@ -82,6 +94,52 @@ export const router = createBrowserRouter([
           },
         ],
       },
+    ],
+  },
+  {
+    path: "admin/dashboard",
+    element: <AdminDashboardLayout />,
+    children: [
+      {
+        index: true,
+        element: <AdminOverview />,
+      },
+      {
+        path: "users",
+        element: <AllBuyers />,
+      },
+      {
+        path: "sellers",
+        element: <AllSellers />,
+      },
+      {
+        path: "users/:id",
+        element: <ViewBuyerD />,
+      },
+      {
+        path: "sellers/:id",
+        element: <ViewSellerD />,
+      },
+      {
+        path: "reports",
+        element: <AdminReport />,
+      },
+      {
+        path: "reports/:id",
+        element: <ReportDetails />,
+      },
+      {
+        path: "Transactions",
+        element: <AdminTransactions />
+      },
+      {
+        path: "category",
+        element: <Category />
+      },
+      {
+        path: "sub-category",
+        element: <SubCategory />
+      }
     ],
   },
 ]);
