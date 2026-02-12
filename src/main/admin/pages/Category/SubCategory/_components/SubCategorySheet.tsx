@@ -87,7 +87,7 @@ export function SubCategorySheet({ open, onOpenChange, categories }: any) {
                     setFormData({ ...formData, categoryId: v })
                   }
                 >
-                  <SelectTrigger className="h-11 rounded-md border-slate-200 bg-white shadow-sm focus:ring-0 focus:border-slate-900 transition-all">
+                  <SelectTrigger className="!h-11 w-full rounded-md border-slate-200 bg-white shadow-sm focus:ring-0 focus:border-slate-900 transition-all">
                     <SelectValue placeholder="Select Parent Group" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl shadow-2xl border-slate-100">
@@ -127,7 +127,7 @@ export function SubCategorySheet({ open, onOpenChange, categories }: any) {
                 <Button
                   onClick={addField}
                   size="sm"
-                  className="h-8 text-[10px] font-bold uppercase bg-slate-900 hover:bg-slate-800 text-white rounded-md shadow-md transition-transform active:scale-95"
+                  className="h-8 text-[10px] font-bold cursor-pointer uppercase bg-slate-900 hover:bg-slate-800 text-white rounded-md shadow-md transition-transform active:scale-95"
                 >
                   <Plus size={14} className="mr-1" strokeWidth={3} /> Add
                   Attribute
@@ -174,11 +174,11 @@ export function SubCategorySheet({ open, onOpenChange, categories }: any) {
             <Button
               variant="ghost"
               onClick={() => onOpenChange(false)}
-              className="text-slate-400 font-bold text-[11px] uppercase tracking-widest hover:bg-slate-50 hover:text-slate-900"
+              className="text-slate-400 cursor-pointer font-bold text-[11px] uppercase tracking-widest hover:bg-slate-50 hover:text-slate-900"
             >
               Discard
             </Button>
-            <Button className="flex-1 h-12 bg-slate-900 hover:bg-slate-800 text-white rounded-md font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 transition-all active:scale-95">
+            <Button className="flex-1 h-12 cursor-pointer bg-slate-900 hover:bg-slate-800 text-white rounded-md font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 transition-all active:scale-95">
               <Save size={16} className="mr-2" /> Save & Deploy
             </Button>
           </div>

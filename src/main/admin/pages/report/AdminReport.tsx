@@ -181,9 +181,6 @@ const navigate = useNavigate()
 
         {/* Pagination */}
         <div className="mt-8 pt-6 border-t border-slate-50 flex justify-between items-center">
-          <p className="text-xs font-medium text-slate-400">
-            Showing {paginatedData.length} of {processedData.length} reports
-          </p>
 
           <CommonPagination
             currentPage={currentPage}

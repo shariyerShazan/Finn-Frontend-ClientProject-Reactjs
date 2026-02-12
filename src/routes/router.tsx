@@ -26,6 +26,11 @@ import ReportDetails from "@/main/admin/pages/report/_components/ReportDetails";
 import AdminTransactions from "@/main/admin/pages/Transactions/AdminTransactions";
 import Category from "@/main/admin/pages/Category/Category/Category";
 import SubCategory from "@/main/admin/pages/Category/SubCategory/SubCategory";
+import SellerDashboardLayout from "@/Layouts/SelllerDashboardLayout";
+import SellerOverview from "@/main/seller/pages/dashboard/Overview";
+import CreateAds from "@/main/seller/pages/ads/CreateAds/CreateAds";
+import SellerChat from "@/main/seller/pages/chats/SellerChat";
+import SellerAllAds from "@/main/seller/pages/ads/allAds/SellerAllAds";
 
 export const router = createBrowserRouter([
   {
@@ -142,4 +147,26 @@ export const router = createBrowserRouter([
       }
     ],
   },
+  {
+    path: "seller/dashboard",
+    element: <SellerDashboardLayout />,
+    children: [
+      {
+        index: true ,
+        element: <SellerOverview />
+      },
+      {
+        path: "ads/create",
+        element: <CreateAds />
+      },
+      {
+        path: "chat" ,
+        element: <SellerChat />
+      },
+      {
+        path: "all-ads" ,
+        element: <SellerAllAds />
+      }
+    ]
+  }
 ]);

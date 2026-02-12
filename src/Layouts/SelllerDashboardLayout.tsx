@@ -1,18 +1,20 @@
+
+
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import AdminSidebarDashboard from "@/main/admin/_components/AdminSidebarDashboard";
-import AdminNavbarDashboard from "@/main/admin/_components/AdminNavbarDashboard";
+import SellerSidebarD from "@/main/seller/_components/SellerSidebarD";
+import SellerNavbarD from "@/main/seller/_components/SellerNavbarD";
 
 
-const AdminDashboardLayout = () => {
+const SellerDashboardLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#F4F7FA] flex font-sans text-slate-900 overflow-hidden">
       {/* --- Sidebar Component --- */}
-      <AdminSidebarDashboard
+      <SellerSidebarD
         isCollapsed={isCollapsed}
         setIsCollapsed={setIsCollapsed}
         isMobileOpen={isMobileOpen}
@@ -22,7 +24,7 @@ const AdminDashboardLayout = () => {
       {/* --- Main Content Area --- */}
       <div className="flex-1 flex flex-col min-w-0 h-screen transition-all duration-300 overflow-hidden">
         {/* Navbar - Pass Mobile Toggle Function */}
-        <AdminNavbarDashboard setIsMobileOpen={setIsMobileOpen} />
+        <SellerNavbarD setIsMobileOpen={setIsMobileOpen} />
 
         {/* Dynamic Content Scroll Area */}
         <main className="flex-1 overflow-y-auto  custom-scrollbar">
@@ -62,4 +64,4 @@ const AdminDashboardLayout = () => {
   );
 };
 
-export default AdminDashboardLayout;
+export default SellerDashboardLayout;
