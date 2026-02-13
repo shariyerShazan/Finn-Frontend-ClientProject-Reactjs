@@ -2,8 +2,8 @@
 import { useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
-import { FaArrowRight } from "react-icons/fa6";
-import { FaArrowLeft } from "react-icons/fa6";
+import { FaArrowRight, FaArrowLeft } from "react-icons/fa";
+import type { Swiper as SwiperType } from "swiper";
 
 // Importing Swiper styles
 import "swiper/css";
@@ -27,8 +27,8 @@ const dummyAds = Array.from({ length: 12 }).map((_, i) => ({
   ],
 }));
 
-const LatestAddHome = ({ title }: {title: any}) => {
-  const swiperRef = useRef(null);
+const LatestAddHome = ({ title }: { title?: string }) => {
+  const swiperRef = useRef<SwiperType | null>(null);
 
   return (
     <section className=" mx-auto">
@@ -61,7 +61,7 @@ const LatestAddHome = ({ title }: {title: any}) => {
       {/* Slider Section */}
       <Swiper
         modules={[Navigation]}
-        onBeforeInit={(swiper) => {
+        onBeforeInit={(swiper: SwiperType) => {
           swiperRef.current = swiper;
         }}
         spaceBetween={25}
