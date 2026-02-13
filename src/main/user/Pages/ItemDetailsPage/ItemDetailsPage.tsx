@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+// import React from "react";
 import ItemDetailsImage from "./_components/ItemDetailsImage";
 import ItemSpecification from "./_components/ItemSpecification";
 import DescriptionAndSellerInfo from "./_components/DescriptionAndSellerInfo";

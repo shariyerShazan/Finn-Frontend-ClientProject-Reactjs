@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useMemo } from "react";
+import  { useState, useMemo } from "react";
 import CommonPagination from "@/main/user/_components/CommonPagination";
 import CommonTable, { type Column } from "@/main/user/_components/CustomTable";
 import { Eye, Ban, Mail, Search } from "lucide-react";

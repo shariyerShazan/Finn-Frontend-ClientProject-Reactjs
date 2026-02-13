@@ -6,7 +6,7 @@ import AdminNavbarDashboard from "@/main/admin/_components/AdminNavbarDashboard"
 
 
 const AdminDashboardLayout = () => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Sheet,
   SheetContent,
@@ -8,7 +8,7 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { Plus, Command, Save, PlusCircle } from "lucide-react";
+import { Command, Save, Plus, Loader2, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,123 +19,189 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
+// import { ScrollArea } from "@/components/ui/scroll-area";
 import { SpecFieldItem } from "./SpecFieldItem";
+import {
+  useCreateSubCategoryMutation,
+  useUpdateSubCategoryMutation,
+} from "@/redux/fetures/admin/admin-category.api";
+import { toast } from "react-toastify";
 
-export function SubCategorySheet({ open, onOpenChange, categories }: any) {
+export function SubCategorySheet({
+  open,
+  onOpenChange,
+  categories,
+  editData,
+}: any) {
   const [formData, setFormData] = useState({
     name: "",
     categoryId: "",
     specFields: [] as any[],
   });
 
+  const [createSub, { isLoading: isCreating }] = useCreateSubCategoryMutation();
+  const [updateSub, { isLoading: isUpdating }] = useUpdateSubCategoryMutation();
+
+  useEffect(() => {
+    if (editData && open) {
+      const formattedFields =
+        editData.specFields?.map((f: any) => ({
+          ...f,
+          options: Array.isArray(f.options)
+            ? f.options.join(", ")
+            : f.options || "",
+        })) || [];
+
+      setFormData({
+        name: editData.name || "",
+        categoryId: editData.categoryId || "",
+        specFields: formattedFields,
+      });
+    } else if (open) {
+      setFormData({ name: "", categoryId: "", specFields: [] });
+    }
+  }, [editData, open]);
+
   const addField = () => {
     setFormData((p) => ({
       ...p,
       specFields: [
         ...p.specFields,
-        { label: "", key: "", type: "text", required: true },
+        { label: "", key: "", type: "text", required: true, options: "" },
       ],
     }));
   };
 
   const updateField = (index: number, key: string, value: any) => {
-    const fields = [...formData.specFields];
-    fields[index][key] = value;
-    if (key === "label")
-      fields[index].key = value.toLowerCase().replace(/\s+/g, "_");
-    setFormData({ ...formData, specFields: fields });
+    setFormData((prev) => {
+      const updatedFields = [...prev.specFields];
+      updatedFields[index] = { ...updatedFields[index], [key]: value };
+      if (key === "label")
+        updatedFields[index].key = value.toLowerCase().replace(/\s+/g, "_");
+      return { ...prev, specFields: updatedFields };
+    });
+  };
+
+  const handleSave = async () => {
+    if (!formData.name || !formData.categoryId)
+      return toast.error("Required fields missing");
+
+    const processedPayload = {
+      name: formData.name,
+      slug: formData.name.toLowerCase().replace(/\s+/g, "-"),
+      categoryId: formData.categoryId,
+      specFields: formData.specFields.map((field) => ({
+        ...field,
+        options:
+          field.type === "select"
+            ? typeof field.options === "string"
+              ? field.options
+                  .split(",")
+                  .map((o: any) => o.trim())
+                  .filter(Boolean)
+              : field.options
+            : [],
+      })),
+    };
+
+    try {
+      if (editData) {
+        await updateSub({ id: editData.id, data: processedPayload }).unwrap();
+        toast.success("Blueprint updated");
+      } else {
+        await createSub(processedPayload).unwrap();
+        toast.success("Blueprint deployed");
+      }
+      onOpenChange(false);
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Operation failed");
+    }
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      {/* FIX 1: h-screen ebong flex-col ensure kora hoyeche jate content baire na jay.
-         FIX 2: max-w barano hoyeche enterprise feel er jonno.
+      {/* CRITICAL FIX: 
+         1. h-full and flex flex-col makes the sheet fill the side.
+         2. overflow-hidden on the SheetContent prevents the WHOLE sheet from scrolling.
       */}
-      <SheetContent className="w-full sm:max-w-[600px] p-0 flex flex-col h-screen border-l border-slate-200 shadow-2xl overflow-hidden">
-        {/* Fixed Header */}
-        <SheetHeader className="p-8 border-b border-slate-100 space-y-2 shrink-0 bg-white">
-          <div className="flex items-center gap-2 text-slate-400">
-            <Command size={14} />
-            <span className="text-[10px] font-bold uppercase tracking-[0.2em]">
-              Schema Engine
-            </span>
-          </div>
-          <SheetTitle className="text-2xl font-bold tracking-tight text-slate-900">
-            Sub-Category Blueprint
-          </SheetTitle>
-          <SheetDescription className="text-slate-500 text-xs">
-            Defining technical specifications for dynamic product forms.
-          </SheetDescription>
-        </SheetHeader>
+      <SheetContent className="w-full sm:max-w-[600px] p-0 flex flex-col h-full overflow-hidden">
+        {/* Header Section (Fixed - No scroll) */}
+        <div className="p-6 border-b shrink-0 bg-white">
+          <SheetHeader>
+            <div className="flex items-center gap-2 text-slate-400 mb-1">
+              <Command size={14} />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                Schema Engine
+              </span>
+            </div>
+            <SheetTitle className="text-xl font-bold">
+              {editData ? "Edit Blueprint" : "New Blueprint"}
+            </SheetTitle>
+            <SheetDescription>
+              Set up attributes for this sub-category.
+            </SheetDescription>
+          </SheetHeader>
+        </div>
 
-        {/* FIX 3: ScrollArea ke 'flex-1' deoa hoyeche jate eita Header ar Footer er majhkhaner puro jaiga ta ney.
-           'h-full' and 'overflow-y-auto' ensures internal scrolling.
+        {/* Scrollable Body (The Magic happens here)
+           flex-1 tells this div to take all the space between header and footer.
         */}
-        <ScrollArea className="flex-1 overflow-y-auto bg-[#fcfcfc]">
-          <div className="p-8 space-y-10 pb-20">
-            {" "}
-            {/* pb-20 added for extra breathing room at bottom */}
-            {/* Base Configuration */}
-            <div className="grid gap-6">
+        <div className="flex-1 overflow-y-auto bg-slate-50/30">
+          <div className="p-6 space-y-8 pb-10">
+            {/* Base Config */}
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                  Parent Hierarchy
+                <Label className="text-[11px] font-bold uppercase text-slate-500">
+                  Parent Category
                 </Label>
                 <Select
+                  value={formData.categoryId}
                   onValueChange={(v) =>
                     setFormData({ ...formData, categoryId: v })
                   }
                 >
-                  <SelectTrigger className="!h-11 w-full rounded-md border-slate-200 bg-white shadow-sm focus:ring-0 focus:border-slate-900 transition-all">
-                    <SelectValue placeholder="Select Parent Group" />
+                  <SelectTrigger className="bg-white border-slate-200">
+                    <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl shadow-2xl border-slate-100">
+                  <SelectContent>
                     {categories.map((c: any) => (
-                      <SelectItem
-                        key={c.id}
-                        value={c.id}
-                        className="text-sm cursor-pointer"
-                      >
+                      <SelectItem key={c.id} value={c.id}>
                         {c.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
-                <Label className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                  Sub-Category Identity
+                <Label className="text-[11px] font-bold uppercase text-slate-500">
+                  Sub-Category Name
                 </Label>
                 <Input
-                  className="h-11 rounded-md border-slate-200 bg-white shadow-sm focus:ring-0 focus:border-slate-900 placeholder:text-slate-300 text-sm font-medium"
-                  placeholder="e.g. Mirrorless Cameras"
+                  className="bg-white border-slate-200"
+                  placeholder="e.g. Smart Watches"
+                  value={formData.name}
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
                 />
               </div>
             </div>
-            {/* Dynamic Attribute Builder */}
-            <div className="space-y-6">
-              {/* FIX 4: Sticky title with background prevents text overlap during scroll */}
-              <div className="flex items-center justify-between border-b border-slate-200 pb-3 sticky top-0 bg-[#fcfcfc] py-2 z-20">
-                <Label className="text-[11px] font-bold uppercase text-slate-900 tracking-wider">
-                  Technical Specifications
-                </Label>
+
+            {/* Attributes List */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                <Label className="font-bold text-slate-900">Attributes</Label>
                 <Button
                   onClick={addField}
                   size="sm"
-                  className="h-8 text-[10px] font-bold cursor-pointer uppercase bg-slate-900 hover:bg-slate-800 text-white rounded-md shadow-md transition-transform active:scale-95"
+                  variant="outline"
+                  className="h-7 text-[10px] uppercase font-bold border-slate-300"
                 >
-                  <Plus size={14} className="mr-1" strokeWidth={3} /> Add
-                  Attribute
+                  <Plus size={12} className="mr-1" /> Add
                 </Button>
               </div>
 
-              {/* Attributes List */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {formData.specFields.map((field, idx) => (
                   <SpecFieldItem
                     key={idx}
@@ -152,37 +218,35 @@ export function SubCategorySheet({ open, onOpenChange, categories }: any) {
                 ))}
 
                 {formData.specFields.length === 0 && (
-                  <div className="h-40 border-2 border-dashed border-slate-200 rounded-2xl flex items-center justify-center flex-col text-slate-400 gap-3 bg-white/50">
-                    <PlusCircle
-                      size={32}
-                      strokeWidth={1}
-                      className="opacity-20"
-                    />
-                    <p className="text-[11px] font-bold uppercase tracking-widest opacity-60">
-                      No attributes defined
+                  <div className="py-10 border border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 gap-2 bg-white/50">
+                    <PlusCircle size={20} className="opacity-20" />
+                    <p className="text-[10px] uppercase font-bold tracking-widest">
+                      Add your first attribute
                     </p>
                   </div>
                 )}
               </div>
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
-        {/* Fixed Footer */}
-        <SheetFooter className="p-6 bg-white border-t border-slate-200 shrink-0 z-30">
-          <div className="flex w-full items-center justify-between gap-4">
+        {/* Footer Section (Fixed - No scroll) */}
+        <div className="p-6 border-t shrink-0 bg-white">
+          <SheetFooter>
             <Button
-              variant="ghost"
-              onClick={() => onOpenChange(false)}
-              className="text-slate-400 cursor-pointer font-bold text-[11px] uppercase tracking-widest hover:bg-slate-50 hover:text-slate-900"
+              onClick={handleSave}
+              disabled={isCreating || isUpdating}
+              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold"
             >
-              Discard
+              {isCreating || isUpdating ? (
+                <Loader2 className="animate-spin mr-2" />
+              ) : (
+                <Save size={16} className="mr-2" />
+              )}
+              {editData ? "Update Changes" : "Create Blueprint"}
             </Button>
-            <Button className="flex-1 h-12 cursor-pointer bg-slate-900 hover:bg-slate-800 text-white rounded-md font-bold text-[11px] uppercase tracking-[0.2em] shadow-xl shadow-slate-200 transition-all active:scale-95">
-              <Save size={16} className="mr-2" /> Save & Deploy
-            </Button>
-          </div>
-        </SheetFooter>
+          </SheetFooter>
+        </div>
       </SheetContent>
     </Sheet>
   );

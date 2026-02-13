@@ -8,7 +8,7 @@ import SellerNavbarD from "@/main/seller/_components/SellerNavbarD";
 
 
 const SellerDashboardLayout = () => {
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   return (

@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import  { useState } from "react";
 
 import { Download, Printer, Search, ChevronDown, Filter } from "lucide-react";
 import CommonTable, { type Column } from "@/main/user/_components/CustomTable";
