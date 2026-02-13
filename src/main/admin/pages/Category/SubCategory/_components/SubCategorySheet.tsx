@@ -19,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// import { ScrollArea } from "@/components/ui/scroll-area";
 import { SpecFieldItem } from "./SpecFieldItem";
 import {
   useCreateSubCategoryMutation,
@@ -35,6 +34,7 @@ export function SubCategorySheet({
 }: any) {
   const [formData, setFormData] = useState({
     name: "",
+    slug: "", // Added Slug
     categoryId: "",
     specFields: [] as any[],
   });
@@ -54,13 +54,26 @@ export function SubCategorySheet({
 
       setFormData({
         name: editData.name || "",
+        slug: editData.slug || "", // Sync Slug from backend
         categoryId: editData.categoryId || "",
         specFields: formattedFields,
       });
     } else if (open) {
-      setFormData({ name: "", categoryId: "", specFields: [] });
+      setFormData({ name: "", slug: "", categoryId: "", specFields: [] });
     }
   }, [editData, open]);
+
+  // Handle Name Change & Auto-generate Slug
+  const handleNameChange = (val: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      name: val,
+      slug: val
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^\w-]+/g, ""),
+    }));
+  };
 
   const addField = () => {
     setFormData((p) => ({
@@ -83,12 +96,12 @@ export function SubCategorySheet({
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.categoryId)
+    if (!formData.name || !formData.categoryId || !formData.slug)
       return toast.error("Required fields missing");
 
     const processedPayload = {
       name: formData.name,
-      slug: formData.name.toLowerCase().replace(/\s+/g, "-"),
+      slug: formData.slug, // Use current slug from state
       categoryId: formData.categoryId,
       specFields: formData.specFields.map((field) => ({
         ...field,
@@ -120,12 +133,8 @@ export function SubCategorySheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      {/* CRITICAL FIX: 
-         1. h-full and flex flex-col makes the sheet fill the side.
-         2. overflow-hidden on the SheetContent prevents the WHOLE sheet from scrolling.
-      */}
       <SheetContent className="w-full sm:max-w-[600px] p-0 flex flex-col h-full overflow-hidden">
-        {/* Header Section (Fixed - No scroll) */}
+        {/* Header - Fixed */}
         <div className="p-6 border-b shrink-0 bg-white">
           <SheetHeader>
             <div className="flex items-center gap-2 text-slate-400 mb-1">
@@ -143,9 +152,7 @@ export function SubCategorySheet({
           </SheetHeader>
         </div>
 
-        {/* Scrollable Body (The Magic happens here)
-           flex-1 tells this div to take all the space between header and footer.
-        */}
+        {/* Body - Scrollable */}
         <div className="flex-1 overflow-y-auto bg-slate-50/30">
           <div className="p-6 space-y-8 pb-10">
             {/* Base Config */}
@@ -172,6 +179,7 @@ export function SubCategorySheet({
                   </SelectContent>
                 </Select>
               </div>
+
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold uppercase text-slate-500">
                   Sub-Category Name
@@ -180,8 +188,21 @@ export function SubCategorySheet({
                   className="bg-white border-slate-200"
                   placeholder="e.g. Smart Watches"
                   value={formData.name}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                />
+              </div>
+
+              {/* Added Slug Field */}
+              <div className="space-y-2">
+                <Label className="text-[11px] font-bold uppercase text-slate-500">
+                  Sub-Category Slug
+                </Label>
+                <Input
+                  className="bg-slate-100 border-slate-200 font-mono text-xs"
+                  placeholder="smart-watches"
+                  value={formData.slug}
                   onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
+                    setFormData({ ...formData, slug: e.target.value })
                   }
                 />
               </div>
@@ -230,7 +251,7 @@ export function SubCategorySheet({
           </div>
         </div>
 
-        {/* Footer Section (Fixed - No scroll) */}
+        {/* Footer - Fixed */}
         <div className="p-6 border-t shrink-0 bg-white">
           <SheetFooter>
             <Button

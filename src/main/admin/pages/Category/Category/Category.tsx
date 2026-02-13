@@ -67,7 +67,7 @@ const Category = () => {
           <div>
             <p className="font-bold text-slate-900 text-sm">{item.name}</p>
             <p className="text-[10px] text-slate-400 font-mono">
-              ID: {item.id.slice(0, 8)}
+              ID: {item.id}
             </p>
           </div>
         </div>
