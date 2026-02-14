@@ -35,7 +35,7 @@ export function SubCategorySheet({
 }: any) {
   const [formData, setFormData] = useState({
     name: "",
-    slug: "", // Added Slug
+    slug: "",
     categoryId: "",
     specFields: [] as any[],
   });
@@ -55,7 +55,7 @@ export function SubCategorySheet({
 
       setFormData({
         name: editData.name || "",
-        slug: editData.slug || "", // Sync Slug from backend
+        slug: editData.slug || "",
         categoryId: editData.categoryId || "",
         specFields: formattedFields,
       });
@@ -64,15 +64,18 @@ export function SubCategorySheet({
     }
   }, [editData, open]);
 
-  // Handle Name Change & Auto-generate Slug
   const handleNameChange = (val: string) => {
+    const generatedSlug = val
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/[^\w-]+/g, "")
+      .replace(/^-+|-+$/g, "");
+
     setFormData((prev) => ({
       ...prev,
       name: val,
-      slug: val
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^\w-]+/g, ""),
+      slug: generatedSlug,
     }));
   };
 
@@ -90,52 +93,76 @@ export function SubCategorySheet({
     setFormData((prev) => {
       const updatedFields = [...prev.specFields];
       updatedFields[index] = { ...updatedFields[index], [key]: value };
-      if (key === "label")
-        updatedFields[index].key = value.toLowerCase().replace(/\s+/g, "_");
+
+      if (key === "label") {
+        updatedFields[index].key = value
+          .toLowerCase()
+          .trim()
+          .replace(/\s+/g, "_")
+          .replace(/[^\w_]+/g, "");
+      }
       return { ...prev, specFields: updatedFields };
     });
   };
 
-  const handleSave = async () => {
-    if (!formData.name || !formData.categoryId || !formData.slug)
-      return toast.error("Required fields missing");
+ const handleSave = async () => {
 
-    const processedPayload = {
-      name: formData.name,
-      slug: formData.slug, // Use current slug from state
-      categoryId: formData.categoryId,
-      specFields: formData.specFields.map((field) => ({
-        ...field,
-        options:
-          field.type === "select"
-            ? typeof field.options === "string"
-              ? field.options
-                  .split(",")
-                  .map((o: any) => o.trim())
-                  .filter(Boolean)
-              : field.options
-            : [],
-      })),
-    };
+   const name = formData.name.trim();
+   const slug = formData.slug.trim();
+   const categoryId = formData.categoryId;
 
-    try {
-      if (editData) {
-        await updateSub({ id: editData.id, data: processedPayload }).unwrap();
-        toast.success("Blueprint updated");
-      } else {
-        await createSub(processedPayload).unwrap();
-        toast.success("Blueprint deployed");
-      }
-      onOpenChange(false);
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Operation failed");
-    }
-  };
+   if (!name || !slug || !categoryId) {
+     return toast.error("Please provide Name, Slug, and Parent Category");
+   }
+
+   const processedPayload = {
+     name,
+     slug,
+     categoryId,
+     specFields: formData.specFields.map((field) => ({
+       label: field.label || "",
+       key: field.key || field.label.toLowerCase().replace(/\s+/g, "_"),
+       type: field.type,
+       required: String(field.required) === "true",
+       options:
+         field.type === "select"
+           ? typeof field.options === "string"
+             ? field.options
+                 .split(",")
+                 .map((o: string) => o.trim())
+                 .filter(Boolean)
+             : field.options
+           : [],
+     })),
+   };
+
+   try {
+     if (editData) {
+       const targetId = editData.id || editData._id;
+
+       await updateSub({
+         subCategoryId: targetId,
+         data: processedPayload,
+       }).unwrap();
+       toast.success("Blueprint updated successfully");
+     } else {
+       await createSub(processedPayload).unwrap();
+       toast.success("Blueprint deployed successfully");
+     }
+     onOpenChange(false);
+   } catch (err: any) {
+     const msg = Array.isArray(err?.data?.message)
+       ? err.data.message[0]
+       : err?.data?.message;
+     toast.error(msg || "Operation failed");
+     console.error("Payload sent:", processedPayload); 
+   }
+ };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-[600px] p-0 flex flex-col h-full overflow-hidden">
-        {/* Header - Fixed */}
+        {/* Header Section */}
         <div className="p-6 border-b shrink-0 bg-white">
           <SheetHeader>
             <div className="flex items-center gap-2 text-slate-400 mb-1">
@@ -148,16 +175,16 @@ export function SubCategorySheet({
               {editData ? "Edit Blueprint" : "New Blueprint"}
             </SheetTitle>
             <SheetDescription>
-              Set up attributes for this sub-category.
+              Configure dynamic attributes for this sub-category.
             </SheetDescription>
           </SheetHeader>
         </div>
 
-        {/* Body - Scrollable */}
+        {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto bg-slate-50/30">
           <div className="p-6 space-y-8 pb-10">
-            {/* Base Config */}
-            <div className="space-y-4">
+            {/* Configuration Card */}
+            <div className="space-y-4 bg-white p-4 rounded-xl border border-slate-200">
               <div className="space-y-2">
                 <Label className="text-[11px] font-bold uppercase text-slate-500">
                   Parent Category
@@ -168,7 +195,7 @@ export function SubCategorySheet({
                     setFormData({ ...formData, categoryId: v })
                   }
                 >
-                  <SelectTrigger className="bg-white border-slate-200">
+                  <SelectTrigger className="bg-white">
                     <SelectValue placeholder="Select Category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -181,45 +208,45 @@ export function SubCategorySheet({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[11px] font-bold uppercase text-slate-500">
-                  Sub-Category Name
-                </Label>
-                <Input
-                  className="bg-white border-slate-200"
-                  placeholder="e.g. Smart Watches"
-                  value={formData.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
-                />
-              </div>
-
-              {/* Added Slug Field */}
-              <div className="space-y-2">
-                <Label className="text-[11px] font-bold uppercase text-slate-500">
-                  Sub-Category Slug
-                </Label>
-                <Input
-                  className="bg-slate-100 border-slate-200 font-mono text-xs"
-                  placeholder="smart-watches"
-                  value={formData.slug}
-                  onChange={(e) =>
-                    setFormData({ ...formData, slug: e.target.value })
-                  }
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-bold uppercase text-slate-500">
+                    Name
+                  </Label>
+                  <Input
+                    placeholder="e.g. Smart Watches"
+                    value={formData.name}
+                    onChange={(e) => handleNameChange(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-[11px] font-bold uppercase text-slate-500">
+                    Slug
+                  </Label>
+                  <Input
+                    className="bg-slate-50 font-mono text-xs"
+                    value={formData.slug}
+                    onChange={(e) =>
+                      setFormData({ ...formData, slug: e.target.value })
+                    }
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Attributes List */}
+            {/* Attributes Section */}
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-                <Label className="font-bold text-slate-900">Attributes</Label>
+                <Label className="font-bold text-slate-900">
+                  Dynamic Attributes
+                </Label>
                 <Button
                   onClick={addField}
                   size="sm"
                   variant="outline"
-                  className="h-7 text-[10px] uppercase font-bold border-slate-300"
+                  className="h-7 text-[10px] uppercase font-bold"
                 >
-                  <Plus size={12} className="mr-1" /> Add
+                  <Plus size={12} className="mr-1" /> Add Field
                 </Button>
               </div>
 
@@ -243,7 +270,7 @@ export function SubCategorySheet({
                   <div className="py-10 border border-dashed rounded-lg flex flex-col items-center justify-center text-slate-400 gap-2 bg-white/50">
                     <PlusCircle size={20} className="opacity-20" />
                     <p className="text-[10px] uppercase font-bold tracking-widest">
-                      Add your first attribute
+                      No attributes added
                     </p>
                   </div>
                 )}
@@ -252,20 +279,20 @@ export function SubCategorySheet({
           </div>
         </div>
 
-        {/* Footer - Fixed */}
+        {/* Action Footer */}
         <div className="p-6 border-t shrink-0 bg-white">
           <SheetFooter>
             <Button
               onClick={handleSave}
               disabled={isCreating || isUpdating}
-              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold"
+              className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all"
             >
               {isCreating || isUpdating ? (
                 <Loader2 className="animate-spin mr-2" />
               ) : (
                 <Save size={16} className="mr-2" />
               )}
-              {editData ? "Update Changes" : "Create Blueprint"}
+              {editData ? "Save Blueprint Changes" : "Deploy New Blueprint"}
             </Button>
           </SheetFooter>
         </div>

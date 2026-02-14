@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import CommonTable from "@/main/user/_components/CustomTable";
 import CommonPagination from "@/main/user/_components/CommonPagination";
 import { SubCategorySheet } from "./_components/SubCategorySheet";
-import {
+import { 
   useGetAllSubCategoriesQuery,
   useDeleteSubCategoryMutation,
   useGetAllCategoriesQuery,

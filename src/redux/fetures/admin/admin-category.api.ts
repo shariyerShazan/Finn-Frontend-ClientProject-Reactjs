@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { baseApi } from "@/redux/api/baseApi";
 
 export const adminCategoryApi = baseApi.injectEndpoints({
@@ -56,36 +57,24 @@ export const adminCategoryApi = baseApi.injectEndpoints({
       providesTags: ["SubCategory"],
     }),
 
-    createSubCategory: builder.mutation({
-      query: (data) => {
-        const formData = new FormData();
-        formData.append("name", data.name);
-        formData.append("categoryId", data.categoryId);
-        formData.append("specFields", JSON.stringify(data.specFields));
-        return {
-          url: "/categories/sub",
-          method: "POST",
-          body: formData,
-        };
-      },
+    createSubCategory: builder.mutation<any, any>({
+      query: (data) => ({
+        url: "/categories/sub",
+        method: "POST",
+        body: data, // সরাসরি ডাটা যাবে
+      }),
       invalidatesTags: ["SubCategory"],
     }),
 
-    updateSubCategory: builder.mutation({
-      query: ({ id, data }) => {
-        const formData = new FormData();
-        if (data.name) formData.append("name", data.name);
-        if (data.categoryId) formData.append("categoryId", data.categoryId);
-        if (data.specFields)
-          formData.append("specFields", JSON.stringify(data.specFields));
-        if (data.slug) formData.append("slug", data.slug);
-
-        return {
-          url: `/categories/sub/${id}`,
-          method: "PATCH",
-          body: formData,
-        };
-      },
+    updateSubCategory: builder.mutation<
+      any,
+      { subCategoryId: string; data: any }
+    >({
+      query: ({ subCategoryId, data }) => ({
+        url: `/categories/sub/${subCategoryId}`,
+        method: "PATCH",
+        body: data, // ডাটা এখানে বডি হিসেবে যাবে
+      }),
       invalidatesTags: ["SubCategory"],
     }),
 
