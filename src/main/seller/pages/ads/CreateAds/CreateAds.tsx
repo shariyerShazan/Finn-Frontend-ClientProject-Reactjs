@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
@@ -17,30 +16,31 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "react-toastify";
-import { Loader2, Upload, X, MapPin, ShieldCheck } from "lucide-react";
+import {
+  Loader2,
+  Upload,
+  X,
+  MapPin,
+  ShieldCheck,
+  Crosshair,
+} from "lucide-react";
 
-// Types matching your Category API
-interface SpecField {
-  label: string;
-  key: string;
-  type: string;
-  required: boolean;
-  options?: string[];
-}
+import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
-interface SubCategory {
-  id: string;
-  name: string;
-  specFields: SpecField[];
-}
+import {
+  useGetAllCategoriesQuery,
+  useGetSingleCategoryQuery,
+} from "@/redux/fetures/admin/admin-category.api";
+import { useCreateAdMutation } from "@/redux/fetures/ads.api";
 
-interface Category {
-  id: string;
-  name: string;
-  subCategories?: SubCategory[];
-}
+const customIcon = new L.Icon({
+  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
 
-// Added Type for Form Data to fix TypeScript errors
 interface AdFormData {
   title: string;
   description: string;
@@ -56,20 +56,27 @@ interface AdFormData {
   showAddress: boolean;
   allowPhone: boolean;
   allowEmail: boolean;
-  [key: `spec_${string}`]: any; // Allows dynamic spec fields without type error
+  latitude: number;
+  longitude: number;
+  [key: `spec_${string}`]: any;
 }
 
 const CreateAds = () => {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [selectedSubCat, setSelectedSubCat] = useState<SubCategory | null>(
-    null,
-  );
   const [images, setImages] = useState<File[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [selectedCatId, setSelectedCatId] = useState<string>("");
+  const [mapCenter, setMapCenter] = useState<[number, number]>([
+    23.8103, 90.4125,
+  ]);
 
-  // Using the defined interface here
+  const { data: categories = [] } = useGetAllCategoriesQuery();
+  const { data: categoryDetails } = useGetSingleCategoryQuery(selectedCatId, {
+    skip: !selectedCatId,
+  });
+  const [createAd, { isLoading: isPosting }] = useCreateAdMutation();
+
+  const subCategories = (categoryDetails as any)?.data?.subCategories || [];
+
   const { register, handleSubmit, setValue, watch } = useForm<AdFormData>({
     defaultValues: {
       type: "FIXED",
@@ -78,103 +85,116 @@ const CreateAds = () => {
       allowPhone: true,
       allowEmail: true,
       country: "Bangladesh",
-      categoryId: "",
-      subCategoryId: "",
+      latitude: 23.8103,
+      longitude: 90.4125,
     },
   });
 
-  const showAddress = watch("showAddress");
-  const allowPhone = watch("allowPhone");
-  const allowEmail = watch("allowEmail");
+  const [selectedSubCat, setSelectedSubCat] = useState<any>(null);
+  const currentLat = watch("latitude");
+  const currentLng = watch("longitude");
 
-  useEffect(() => {
-    fetch("https://shazan-ad-marketplace-project.onrender.com/categories")
-      .then((res) => res.json())
-      .then((data) => setCategories(data))
-      .catch(() => toast.error("Categories failed to load"));
-  }, []);
+  function MapClickHandler() {
+    useMapEvents({
+      click(e) {
+        setValue("latitude", e.latlng.lat);
+        setValue("longitude", e.latlng.lng);
+      },
+    });
+    return null;
+  }
 
-  const handleCategoryChange = async (categoryId: string) => {
-    setValue("categoryId", categoryId);
+  const getDeviceLocation = () => {
+    if (!navigator.geolocation)
+      return toast.error("Geolocation is not supported");
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setValue("latitude", latitude);
+        setValue("longitude", longitude);
+        setMapCenter([latitude, longitude]);
+        toast.success("Location updated!");
+      },
+      (error) => toast.error(error.message),
+    );
+  };
+
+  const handleCategoryChange = (id: string) => {
+    setSelectedCatId(id);
+    setValue("categoryId", id);
+    setValue("subCategoryId", "");
     setSelectedSubCat(null);
-    try {
-      const res = await fetch(
-        `https://shazan-ad-marketplace-project.onrender.com/categories/${categoryId}`,
-      );
-      const data = await res.json();
-      setSubCategories(data.subCategories || []);
-    } catch {
-      toast.error("Sub-categories failed to load");
-    }
   };
 
   const handleSubCategoryChange = (id: string) => {
-    const sub = subCategories.find((s) => s.id === id);
+    const sub = subCategories.find((s: any) => s.id === id);
     setSelectedSubCat(sub || null);
     setValue("subCategoryId", id);
   };
 
   const onSubmit = async (data: AdFormData) => {
-    setLoading(true);
     const formData = new FormData();
 
-    const fields: (keyof AdFormData)[] = [
-      "title",
-      "description",
-      "type",
-      "price",
-      "propertyFor",
-      "state",
-      "city",
-      "zipCode",
-      "country",
-      "categoryId",
-      "subCategoryId",
-      "showAddress",
-      "allowPhone",
-      "allowEmail",
-    ];
+    // Append standard fields
+    formData.append("title", data.title);
+    formData.append("description", data.description);
+    formData.append("type", data.type);
+    formData.append("propertyFor", data.propertyFor);
+    formData.append("price", data.price); // Backend will parse string to number via @Type
+    formData.append("country", data.country);
+    formData.append("state", data.state);
+    formData.append("city", data.city);
+    formData.append("categoryId", data.categoryId);
+    formData.append("subCategoryId", data.subCategoryId);
 
-    fields.forEach((field) => {
-      if (data[field] !== undefined)
-        formData.append(field as string, data[field] as any);
-    });
+    if (data.zipCode) formData.append("zipCode", data.zipCode);
+    formData.append("latitude", String(data.latitude));
+    formData.append("longitude", String(data.longitude));
 
+    // Proper Boolean handling for NestJS
+    formData.append("showAddress", String(data.showAddress));
+    formData.append("allowPhone", String(data.allowPhone));
+    formData.append("allowEmail", String(data.allowEmail));
+
+    // Handle Specifications (Crucial Fix)
     const specs: Record<string, any> = {};
-    selectedSubCat?.specFields.forEach((f) => {
-      const val = data[`spec_${f.key}`];
-      if (val) specs[f.key] = f.type === "number" ? Number(val) : val;
-    });
+    if (selectedSubCat?.specFields) {
+      selectedSubCat.specFields.forEach((f: any) => {
+        const val = data[`spec_${f.key}`];
+        if (val !== undefined && val !== "") {
+          specs[f.key] = f.type === "number" ? Number(val) : val;
+        }
+      });
+    }
     formData.append("specifications", JSON.stringify(specs));
 
-    images.forEach((file) => formData.append("images", file));
+    // Handle Images
+    if (images.length > 0) {
+      images.forEach((file) => formData.append("images", file));
+    } else {
+      return toast.error("Please upload at least one image");
+    }
 
     try {
-      const response = await fetch(
-        "https://shazan-ad-marketplace-project.onrender.com/ads",
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-      if (response.ok) {
-        toast.success("Ad posted successfully!");
-        navigate("/seller/dashboard/ads");
-      } else {
-        const errData = await response.json();
-        toast.error(errData.message || "Failed to post ad");
-      }
-    } catch {
-      toast.error("Something went wrong");
-    } finally {
-      setLoading(false);
+      await createAd(formData).unwrap();
+      toast.success("Ad posted successfully!");
+      navigate("/seller/dashboard/ads");
+    } catch (err: any) {
+      console.error("Submission Error:", err);
+      // Detailed error extractor
+      const errorData = err?.data;
+      const errorMessage = Array.isArray(errorData?.message)
+        ? errorData.message.join(", ")
+        : errorData?.message || "Something went wrong";
+
+      toast.error(errorMessage);
     }
   };
 
   return (
-    <div className="p-6 mx-auto space-y-8">
+    <div className="p-6 mx-auto space-y-8 max-w-7xl">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-        <div className="flex flex-col md:flex-row gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 space-y-6">
             <Card>
               <CardHeader>
@@ -182,26 +202,21 @@ const CreateAds = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>
-                    Ad Title <span className="text-red-500">*</span>
-                  </Label>
+                  <Label>Ad Title *</Label>
                   <Input
-                    {...register("title", { required: true })}
-                    placeholder="Modern Villa in Gulshan"
+                    {...register("title", { required: "Title is required" })}
+                    placeholder="Modern Villa"
                   />
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>
-                      Category <span className="text-red-500">*</span>
-                    </Label>
+                    <Label>Category *</Label>
                     <Select onValueChange={handleCategoryChange}>
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories.map((c) => (
+                        {categories?.data?.map((c: any) => (
                           <SelectItem key={c.id} value={c.id}>
                             {c.name}
                           </SelectItem>
@@ -210,18 +225,16 @@ const CreateAds = () => {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>
-                      Sub Category <span className="text-red-500">*</span>
-                    </Label>
+                    <Label>Sub Category *</Label>
                     <Select
                       onValueChange={handleSubCategoryChange}
                       disabled={!subCategories.length}
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger>
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
-                        {subCategories.map((s) => (
+                        {subCategories.map((s: any) => (
                           <SelectItem key={s.id} value={s.id}>
                             {s.name}
                           </SelectItem>
@@ -230,22 +243,10 @@ const CreateAds = () => {
                     </Select>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Ad Type</Label>
-                    <Select
-                      onValueChange={(v) => setValue("type", v)}
-                      defaultValue="FIXED"
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="FIXED">Fixed Price</SelectItem>
-                        <SelectItem value="AUCTION">Auction</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Input value="FIXED" disabled className="bg-slate-100" />
                   </div>
                   <div className="space-y-2">
                     <Label>Property For</Label>
@@ -253,7 +254,7 @@ const CreateAds = () => {
                       onValueChange={(v) => setValue("propertyFor", v)}
                       defaultValue="SALE"
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -263,11 +264,8 @@ const CreateAds = () => {
                     </Select>
                   </div>
                 </div>
-
                 <div className="space-y-2">
-                  <Label>
-                    Price ($) <span className="text-red-500">*</span>
-                  </Label>
+                  <Label>Price ($) *</Label>
                   <Input
                     type="number"
                     {...register("price", { required: true })}
@@ -277,13 +275,13 @@ const CreateAds = () => {
               </CardContent>
             </Card>
 
-            {selectedSubCat && selectedSubCat.specFields.length > 0 && (
+            {selectedSubCat?.specFields?.length > 0 && (
               <Card className="bg-slate-50 border-dashed">
                 <CardHeader>
                   <CardTitle className="text-lg">Specifications</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 gap-4">
-                  {selectedSubCat.specFields.map((field) => (
+                  {selectedSubCat.specFields.map((field: any) => (
                     <div key={field.key} className="space-y-2">
                       <Label>
                         {field.label}{" "}
@@ -297,11 +295,11 @@ const CreateAds = () => {
                             setValue(`spec_${field.key}`, v)
                           }
                         >
-                          <SelectTrigger className="bg-white w-full">
+                          <SelectTrigger className="bg-white">
                             <SelectValue placeholder="Choose" />
                           </SelectTrigger>
                           <SelectContent>
-                            {field.options?.map((o) => (
+                            {field.options?.map((o: string) => (
                               <SelectItem key={o} value={o}>
                                 {o}
                               </SelectItem>
@@ -331,40 +329,65 @@ const CreateAds = () => {
                 <Textarea
                   {...register("description")}
                   rows={6}
-                  placeholder="Describe the condition, features etc..."
+                  placeholder="Describe your ad..."
                 />
               </CardContent>
             </Card>
           </div>
 
-          <div className="w-full md:w-100 space-y-6">
+          <div className="w-full lg:w-[400px] space-y-6">
             <Card>
-              <CardHeader className="flex flex-row items-center gap-2">
-                <MapPin size={18} className="text-[#0064AE]" />
-                <CardTitle className="text-lg">Location</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin size={18} className="text-[#0064AE]" />
+                  <CardTitle className="text-lg">Location</CardTitle>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={getDeviceLocation}
+                  className="text-xs h-8"
+                >
+                  <Crosshair size={14} className="mr-1" /> Get Location
+                </Button>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Country</Label>
-                  <Input {...register("country")} />
+                <div className="h-[200px] w-full rounded-md overflow-hidden border">
+                  <MapContainer
+                    center={mapCenter}
+                    zoom={13}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                    <Marker
+                      position={[currentLat || 23.8103, currentLng || 90.4125]}
+                      icon={customIcon}
+                      draggable={true}
+                      eventHandlers={{
+                        dragend: (e) => {
+                          const pos = e.target.getLatLng();
+                          setValue("latitude", pos.lat);
+                          setValue("longitude", pos.lng);
+                        },
+                      }}
+                    />
+                    <MapClickHandler />
+                  </MapContainer>
                 </div>
                 <div className="space-y-2">
-                  <Label>
-                    State <span className="text-red-500">*</span>
-                  </Label>
+                  <Label>State *</Label>
                   <Input {...register("state", { required: true })} />
                 </div>
-                <div className="space-y-2">
-                  <Label>
-                    City <span className="text-red-500">*</span>
-                  </Label>
-                  <Input {...register("city", { required: true })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>
-                    Zip Code <span className="text-red-500">*</span>
-                  </Label>
-                  <Input {...register("zipCode", { required: true })} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label>City *</Label>
+                    <Input {...register("city", { required: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Zip Code</Label>
+                    <Input {...register("zipCode")} />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -372,36 +395,25 @@ const CreateAds = () => {
             <Card>
               <CardHeader className="flex flex-row items-center gap-2">
                 <ShieldCheck size={18} className="text-green-600" />
-                <CardTitle className="text-lg">Privacy & Contact</CardTitle>
+                <CardTitle className="text-lg">Privacy</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label>Show Address</Label>
-                  <Switch
-                    checked={showAddress}
-                    onCheckedChange={(checked) =>
-                      setValue("showAddress", checked)
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label>Allow Phone</Label>
-                  <Switch
-                    checked={allowPhone}
-                    onCheckedChange={(checked) =>
-                      setValue("allowPhone", checked)
-                    }
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label>Allow Email</Label>
-                  <Switch
-                    checked={allowEmail}
-                    onCheckedChange={(checked) =>
-                      setValue("allowEmail", checked)
-                    }
-                  />
-                </div>
+                {[
+                  { label: "Show Address", name: "showAddress" as const },
+                  { label: "Allow Phone", name: "allowPhone" as const },
+                  { label: "Allow Email", name: "allowEmail" as const },
+                ].map((item) => (
+                  <div
+                    key={item.name}
+                    className="flex items-center justify-between"
+                  >
+                    <Label>{item.label}</Label>
+                    <Switch
+                      checked={watch(item.name)}
+                      onCheckedChange={(val) => setValue(item.name, val)}
+                    />
+                  </div>
+                ))}
               </CardContent>
             </Card>
 
@@ -419,15 +431,14 @@ const CreateAds = () => {
                       <img
                         src={URL.createObjectURL(img)}
                         className="w-full h-full object-cover"
+                        alt="Ad preview"
                       />
                       <button
                         type="button"
                         onClick={() =>
-                          setImages((prev) =>
-                            prev.filter((_, idx) => idx !== i),
-                          )
+                          setImages((p) => p.filter((_, idx) => idx !== i))
                         }
-                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100"
                       >
                         <X size={12} />
                       </button>
@@ -451,14 +462,10 @@ const CreateAds = () => {
 
             <Button
               type="submit"
-              disabled={loading}
+              disabled={isPosting}
               className="w-full bg-[#0064AE] h-12 text-lg"
             >
-              {loading ? (
-                <Loader2 className="animate-spin mr-2" />
-              ) : (
-                "Publish Ad"
-              )}
+              {isPosting ? <Loader2 className="animate-spin" /> : "Publish Ad"}
             </Button>
           </div>
         </div>

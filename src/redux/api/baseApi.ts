@@ -1,12 +1,18 @@
 // src/redux/api/baseApi.ts
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
+// src/redux/api/baseApi.ts
 export const baseApi = createApi({
   reducerPath: "baseApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "https://shazan-ad-marketplace-project.onrender.com", // Adjust the prefix (e.g., /api/v1) based on your NestJS global prefix
-    credentials: "include", // Required for cookies/sessions
+    baseUrl: "http://localhost:3002",
+    credentials: "include", 
+    prepareHeaders: (headers) => {
+      // Jodi auth token cookie charao header e thake, ekhane add koren
+      // Kintu vul-eo headers.set('Content-Type', 'multipart/form-data') likhben na.
+      return headers;
+    },
   }),
-  tagTypes: ["User", "Category", "SubCategory"],
+  tagTypes: ["User", "Category", "SubCategory", "Ad"],
   endpoints: () => ({}),
 });
