@@ -47,7 +47,9 @@ export default function SignUp() {
       const res = await registerUser(registerData).unwrap();
       if (res.success) {
         toast.success(res.message || "Success!");
-        navigate("/verify-otp", { state: { email: data.email } });
+        navigate("/verify-otp", {
+          state: { email: data.email, role: data.role },
+        });
       }
     } catch (err: any) {
       const serverError = err?.data?.message;

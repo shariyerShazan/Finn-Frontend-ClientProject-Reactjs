@@ -6,13 +6,13 @@ export const baseApi = createApi({
   reducerPath: "baseApi",
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:3002",
-    credentials: "include", 
+    credentials: "include",
     prepareHeaders: (headers) => {
       // Jodi auth token cookie charao header e thake, ekhane add koren
       // Kintu vul-eo headers.set('Content-Type', 'multipart/form-data') likhben na.
       return headers;
     },
   }),
-  tagTypes: ["User", "Category", "SubCategory", "Ad"],
+  tagTypes: ["User", "Category", "SubCategory", "Ad", "Ads"],
   endpoints: () => ({}),
 });

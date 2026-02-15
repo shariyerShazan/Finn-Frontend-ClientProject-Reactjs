@@ -43,7 +43,7 @@ export const adsApi = baseApi.injectEndpoints({
       invalidatesTags: ["Ad"],
     }),
 
-    updateAd: builder.mutation<any, { adId: string; data: FormData }>({
+    updateAd: builder.mutation<any, { adId: string | undefined; data: FormData }>({
       query: ({ adId, data }) => ({
         url: `/ads/${adId}`,
         method: "PATCH",

@@ -32,6 +32,8 @@ import CreateAds from "@/main/seller/pages/ads/CreateAds/CreateAds";
 import SellerChat from "@/main/seller/pages/chats/SellerChat";
 import SellerAllAds from "@/main/seller/pages/ads/allAds/SellerAllAds";
 import SellerPayments from "@/main/seller/pages/payments/SellerPayments";
+import CompleteSellerProfile from "@/main/seller/pages/create-profile/CompleteSellerProfile";
+import SellerEditAds from "@/main/seller/pages/ads/editAds/EditAds";
 
 export const router = createBrowserRouter([
   {
@@ -161,6 +163,10 @@ export const router = createBrowserRouter([
         element: <CreateAds />
       },
       {
+        path: "ads/edit/:id",
+        element: <SellerEditAds />
+      },
+      {
         path: "chat" ,
         element: <SellerChat />
       },
@@ -171,6 +177,10 @@ export const router = createBrowserRouter([
       {
         path: "payments" ,
         element: <SellerPayments />
+      },
+      {
+        path: "create-seller-profile" ,
+        element: <CompleteSellerProfile />
       }
     ]
   }

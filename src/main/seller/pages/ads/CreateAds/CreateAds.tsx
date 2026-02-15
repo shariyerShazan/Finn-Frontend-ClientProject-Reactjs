@@ -25,6 +25,7 @@ import {
   Crosshair,
 } from "lucide-react";
 
+// --- Leaflet Imports ---
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -35,6 +36,7 @@ import {
 } from "@/redux/fetures/admin/admin-category.api";
 import { useCreateAdMutation } from "@/redux/fetures/ads.api";
 
+// Marker Icon Fix
 const customIcon = new L.Icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   iconSize: [25, 41],
@@ -56,8 +58,8 @@ interface AdFormData {
   showAddress: boolean;
   allowPhone: boolean;
   allowEmail: boolean;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   [key: `spec_${string}`]: any;
 }
 
@@ -75,7 +77,7 @@ const CreateAds = () => {
   });
   const [createAd, { isLoading: isPosting }] = useCreateAdMutation();
 
-  const subCategories = (categoryDetails as any)?.data?.subCategories || [];
+  const subCategories = categoryDetails?.subCategories || [];
 
   const { register, handleSubmit, setValue, watch } = useForm<AdFormData>({
     defaultValues: {
@@ -94,6 +96,7 @@ const CreateAds = () => {
   const currentLat = watch("latitude");
   const currentLng = watch("longitude");
 
+  // --- Map Click Logic ---
   function MapClickHandler() {
     useMapEvents({
       click(e) {
@@ -107,15 +110,16 @@ const CreateAds = () => {
   const getDeviceLocation = () => {
     if (!navigator.geolocation)
       return toast.error("Geolocation is not supported");
+    toast.info("Fetching device location...");
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         setValue("latitude", latitude);
         setValue("longitude", longitude);
         setMapCenter([latitude, longitude]);
-        toast.success("Location updated!");
+        toast.success("Location updated successfully!");
       },
-      (error) => toast.error(error.message),
+      (error) => toast.error("Error: " + error.message),
     );
   };
 
@@ -134,60 +138,47 @@ const CreateAds = () => {
 
   const onSubmit = async (data: AdFormData) => {
     const formData = new FormData();
+    const standardFields = [
+      "title",
+      "description",
+      "type",
+      "price",
+      "propertyFor",
+      "state",
+      "city",
+      "zipCode",
+      "country",
+      "categoryId",
+      "subCategoryId",
+      "showAddress",
+      "allowPhone",
+      "allowEmail",
+      "latitude",
+      "longitude",
+    ];
 
-    // Append standard fields
-    formData.append("title", data.title);
-    formData.append("description", data.description);
-    formData.append("type", data.type);
-    formData.append("propertyFor", data.propertyFor);
-    formData.append("price", data.price); // Backend will parse string to number via @Type
-    formData.append("country", data.country);
-    formData.append("state", data.state);
-    formData.append("city", data.city);
-    formData.append("categoryId", data.categoryId);
-    formData.append("subCategoryId", data.subCategoryId);
+    standardFields.forEach((field) => {
+      if (data[field as keyof AdFormData] !== null) {
+        formData.append(field, String(data[field as keyof AdFormData]));
+      }
+    });
 
-    if (data.zipCode) formData.append("zipCode", data.zipCode);
-    formData.append("latitude", String(data.latitude));
-    formData.append("longitude", String(data.longitude));
-
-    // Proper Boolean handling for NestJS
-    formData.append("showAddress", String(data.showAddress));
-    formData.append("allowPhone", String(data.allowPhone));
-    formData.append("allowEmail", String(data.allowEmail));
-
-    // Handle Specifications (Crucial Fix)
+    // Specifications Logic (Based on subCategory)
     const specs: Record<string, any> = {};
-    if (selectedSubCat?.specFields) {
-      selectedSubCat.specFields.forEach((f: any) => {
-        const val = data[`spec_${f.key}`];
-        if (val !== undefined && val !== "") {
-          specs[f.key] = f.type === "number" ? Number(val) : val;
-        }
-      });
-    }
+    selectedSubCat?.specFields?.forEach((f: any) => {
+      const val = data[`spec_${f.key}`];
+      if (val) specs[f.key] = f.type === "number" ? Number(val) : val;
+    });
     formData.append("specifications", JSON.stringify(specs));
 
-    // Handle Images
-    if (images.length > 0) {
-      images.forEach((file) => formData.append("images", file));
-    } else {
-      return toast.error("Please upload at least one image");
-    }
+    images.forEach((file) => formData.append("images", file));
 
     try {
       await createAd(formData).unwrap();
       toast.success("Ad posted successfully!");
-      navigate("/seller/dashboard/ads");
+      navigate("/seller/dashboard/all-ads");
     } catch (err: any) {
-      console.error("Submission Error:", err);
-      // Detailed error extractor
-      const errorData = err?.data;
-      const errorMessage = Array.isArray(errorData?.message)
-        ? errorData.message.join(", ")
-        : errorData?.message || "Something went wrong";
-
-      toast.error(errorMessage);
+      toast.error(err?.data?.message || "Failed to post ad");
     }
   };
 
@@ -202,12 +193,15 @@ const CreateAds = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Ad Title *</Label>
+                  <Label>
+                    Ad Title <span className="text-red-500">*</span>
+                  </Label>
                   <Input
-                    {...register("title", { required: "Title is required" })}
+                    {...register("title", { required: true })}
                     placeholder="Modern Villa"
                   />
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Category *</Label>
@@ -216,7 +210,7 @@ const CreateAds = () => {
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
-                        {categories?.data?.map((c: any) => (
+                        {categories.map((c: any) => (
                           <SelectItem key={c.id} value={c.id}>
                             {c.name}
                           </SelectItem>
@@ -243,6 +237,7 @@ const CreateAds = () => {
                     </Select>
                   </div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Ad Type</Label>
@@ -264,6 +259,7 @@ const CreateAds = () => {
                     </Select>
                   </div>
                 </div>
+
                 <div className="space-y-2">
                   <Label>Price ($) *</Label>
                   <Input
@@ -275,6 +271,7 @@ const CreateAds = () => {
               </CardContent>
             </Card>
 
+            {/* RESTORED: Dynamic Specs based on SubCategory */}
             {selectedSubCat?.specFields?.length > 0 && (
               <Card className="bg-slate-50 border-dashed">
                 <CardHeader>
@@ -349,10 +346,11 @@ const CreateAds = () => {
                   onClick={getDeviceLocation}
                   className="text-xs h-8"
                 >
-                  <Crosshair size={14} className="mr-1" /> Get Location
+                  <Crosshair size={14} className="mr-1" /> Get My Location
                 </Button>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* --- Leaflet Map Integrated into your card --- */}
                 <div className="h-[200px] w-full rounded-md overflow-hidden border">
                   <MapContainer
                     center={mapCenter}
@@ -374,6 +372,15 @@ const CreateAds = () => {
                     />
                     <MapClickHandler />
                   </MapContainer>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground bg-slate-50 p-2 rounded">
+                  <div>Lat: {currentLat?.toFixed(4) || "N/A"}</div>
+                  <div>Lng: {currentLng?.toFixed(4) || "N/A"}</div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Country</Label>
+                  <Input {...register("country")} />
                 </div>
                 <div className="space-y-2">
                   <Label>State *</Label>

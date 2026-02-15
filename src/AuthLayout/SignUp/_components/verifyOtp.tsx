@@ -22,17 +22,25 @@ const VerifyRegisterOtp = () => {
     defaultValues: { email, otp: "" }
   });
 
-  const onSubmit = async (data: VerifyOtpRequest) => {
-    try {
-      const res = await verifyOtp(data).unwrap();
-      if (res.success) {
-        toast.success(res.message);
+  const role = location.state?.role || "USER";
+const onSubmit = async (data: VerifyOtpRequest) => {
+  try {
+    const res = await verifyOtp(data).unwrap();
+    if (res.success) {
+      toast.success(res.message);
+
+      if (role === "SELLER") {
+        navigate("/login", {
+          state: { message: "Please login to setup your seller profile" },
+        });
+      } else {
         navigate("/login");
       }
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Invalid OTP");
     }
-  };
+  } catch (err: any) {
+    toast.error(err?.data?.message || "Invalid OTP");
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
