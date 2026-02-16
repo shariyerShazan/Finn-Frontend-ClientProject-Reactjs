@@ -200,7 +200,7 @@ const SellerEditAds = () => {
     );
 
   return (
-    <div className="p-6 mx-auto space-y-8 max-w-7xl">
+    <div className="p-4 mx-auto space-y-8">
       <h1 className="text-2xl font-bold">Edit Listing</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex flex-col lg:flex-row gap-8">
@@ -232,7 +232,7 @@ const SellerEditAds = () => {
                           }
                           value={field.value || ""}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select Category" />
                           </SelectTrigger>
                           <SelectContent>
@@ -262,7 +262,7 @@ const SellerEditAds = () => {
                           }
                           value={field.value || ""}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select Sub Category" />
                           </SelectTrigger>
                           <SelectContent>
@@ -299,7 +299,7 @@ const SellerEditAds = () => {
                           onValueChange={field.onChange}
                           value={field.value || ""}
                         >
-                          <SelectTrigger>
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Select Purpose" />
                           </SelectTrigger>
                           <SelectContent>
@@ -333,7 +333,7 @@ const SellerEditAds = () => {
                               onValueChange={specField.onChange}
                               value={specField.value || ""}
                             >
-                              <SelectTrigger className="bg-white">
+                              <SelectTrigger className="bg-white w-full">
                                 <SelectValue placeholder="Choose" />
                               </SelectTrigger>
                               <SelectContent>

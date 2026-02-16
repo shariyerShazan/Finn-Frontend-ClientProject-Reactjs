@@ -16,10 +16,8 @@ import type { Column } from "@/main/user/_components/CustomTable";
 import CommonTable from "@/main/user/_components/CustomTable";
 import CommonPagination from "@/main/user/_components/CommonPagination";
 import { useNavigate } from "react-router";
-import { toast } from "react-toastify";
-
-// Backend specific hooks
-// import { useGetMyAdsQuery } from "@/redux/fetures/user/user.api"; // userApi theke ashbe
+// import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 import { useDeleteAdMutation } from "@/redux/fetures/ads.api"; // delete ad common hote pare
 import { useGetMyAdsQuery } from "@/redux/fetures/users.api";
 import ViewAdDialog from "./ViewAdDialogProps";
@@ -57,7 +55,7 @@ const AllAds = () => {
     // kintu standard practice hisebe eivabe pathano jay.
   });
 console.log(data, "ok");
-  const [deleteAd, { isLoading: isDeleting }] = useDeleteAdMutation();
+  const [deleteAd] = useDeleteAdMutation();
 
   // Data structure according to your NestJS backend response
   const adsList = (data as any)?.data || [];
@@ -65,109 +63,163 @@ console.log(data, "ok");
   const totalPages = meta?.lastPage || 1;
 
   // --- Handlers ---
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Permanent delete? This cannot be undone.")) return;
+const handleDelete = async (id: string) => {
+  const result = await Swal.fire({
+    title: "Are you sure?",
+    text: "You won't be able to revert this!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#0064AE", 
+    cancelButtonColor: "#ef4444",
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+    customClass: {
+      popup: "rounded-2xl",
+      confirmButton: "rounded-xl px-6 py-3",
+      cancelButton: "rounded-xl px-6 py-3",
+    },
+  });
+
+  if (result.isConfirmed) {
     try {
       await deleteAd(id).unwrap();
-      toast.success("Ad removed from listings");
+      await Swal.fire({
+        title: "Deleted!",
+        text: "Your ad has been removed successfully.",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+        customClass: {
+          popup: "rounded-2xl",
+        },
+      });
+
     } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to delete ad");
+      Swal.fire({
+        title: "Error!",
+        text: err?.data?.message || "Failed to delete ad",
+        icon: "error",
+        confirmButtonColor: "#0064AE",
+        customClass: {
+          popup: "rounded-2xl",
+        },
+      });
     }
-  };
+  }
+};
 
   const handleOpenView = (ad: AdData) => {
     setSelectedAd(ad);
     setIsViewOpen(true);
   };
 
-  const columns: Column<AdData>[] = [
-    {
-      header: "Serial ID",
-      render: (item) => (
-        <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-1 rounded">
-          #{item.id.slice(-6).toUpperCase()}
-        </span>
-      ),
-    },
-    {
-      header: "Ads Title",
-      render: (item) => (
-        <div className="flex items-center gap-3">
-          <img
-            src={item.images?.[0]?.url || "https://via.placeholder.com/150"}
-            alt=""
-            className="w-12 h-12 rounded-lg object-cover border border-slate-200 shadow-sm"
-          />
-          <div className="flex flex-col text-left">
-            <span className="font-bold text-slate-800 line-clamp-1">
-              {item.title}
-            </span>
-            <span className="text-[10px] text-blue-600 font-medium uppercase tracking-wider">
-              {item.category?.name || "Uncategorized"}
-            </span>
-          </div>
+const columns: Column<AdData>[] = [
+  {
+    header: "Serial ID",
+    render: (item) => (
+      <span className="text-xs text-slate-400 font-mono bg-slate-50 px-2 py-1 rounded">
+        #{item.id.slice(-6).toUpperCase()}
+      </span>
+    ),
+  },
+  {
+    header: "Ads Title",
+    render: (item) => (
+      <div className="flex items-center gap-3">
+        <img
+          src={item.images?.[0]?.url || "https://via.placeholder.com/150"}
+          alt=""
+          className="w-12 h-12 rounded-lg object-cover border border-slate-100 shadow-sm"
+        />
+        <div className="flex flex-col">
+          <span className="font-bold text-slate-800 line-clamp-1 max-w-[180px]">
+            {item.title}
+          </span>
+          <span className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+            {item.category?.name || "General"}
+          </span>
         </div>
-      ),
-    },
-    {
-      header: "Price/Rent",
-      render: (item) => (
-        <span className="font-bold text-slate-900">
-          ${item.price?.toLocaleString()}
+      </div>
+    ),
+  },
+  {
+    header: "Price",
+    render: (item) => (
+      <span className="font-bold text-slate-900">
+        ${item.price?.toLocaleString()}
+      </span>
+    ),
+  },
+  {
+    header: "Views",
+    render: (item) => (
+      <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded-full w-fit">
+        <Eye size={14} className="text-blue-500" />
+        <span className="text-sm font-semibold text-slate-700">
+          {(item as any).views || 0}
         </span>
-      ),
-    },
-    {
-      header: "Published",
-      render: (item) => (
-        <span className="text-slate-500 text-sm">
-          {item.createdAt
-            ? new Date(item.createdAt).toLocaleDateString("en-GB")
-            : "N/A"}
+      </div>
+    ),
+  },
+  {
+    header: "Published",
+    render: (item) => (
+      <div className="flex flex-col">
+        <span className="text-sm text-slate-600 font-medium">
+          {new Date(item.createdAt).toLocaleDateString("en-GB")}
         </span>
-      ),
-    },
-    {
-      header: "Status",
-      render: (item) => (
-        <Badge
-          className={`px-3 py-1 border-none shadow-none ${
-            !item.isSold
-              ? "bg-blue-100 text-blue-700 hover:bg-blue-100"
-              : "bg-orange-100 text-orange-700 hover:bg-orange-100"
-          }`}
+        <span className="text-[10px] text-slate-400">
+          {new Date(item.createdAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </span>
+      </div>
+    ),
+  },
+  {
+    header: "Status",
+    render: (item) => (
+      <Badge
+        className={`px-3 py-1 border-none shadow-none font-bold ${
+          !item.isSold
+            ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+            : "bg-slate-100 text-slate-500 hover:bg-slate-100"
+        }`}
+      >
+        {!item.isSold ? "Active" : "Sold"}
+      </Badge>
+    ),
+  },
+  {
+    header: "Action",
+    render: (item) => (
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => handleOpenView(item)}
+          title="View Details"
+          className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 border border-slate-100 rounded-xl transition-all cursor-pointer shadow-sm"
         >
-          {!item.isSold ? "Active" : "Sold"}
-        </Badge>
-      ),
-    },
-    {
-      header: "Action",
-      render: (item) => (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleOpenView(item)}
-            className="p-2 bg-slate-50 hover:bg-blue-50 text-slate-400 hover:text-blue-600 rounded-full transition-colors border border-slate-100"
-          >
-            <Eye size={16} />
-          </button>
-          <button
-            onClick={() => navigate(`/seller/dashboard/ads/edit/${item.id}`)}
-            className="p-2 bg-slate-50 hover:bg-green-50 text-slate-400 hover:text-green-600 rounded-full transition-colors border border-slate-100"
-          >
-            <Edit size={16} />
-          </button>
-          <button
-            onClick={() => handleDelete(item.id)}
-            disabled={isDeleting}
-            className="p-2 bg-slate-50 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-full transition-colors border border-slate-100 disabled:opacity-50"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
-      ),
-    },
-  ];
+          <Eye size={16} />
+        </button>
+        <button
+          onClick={() => navigate(`/seller/dashboard/ads/edit/${item.id}`)}
+          title="Edit Ad"
+          className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 border border-slate-100 rounded-xl transition-all cursor-pointer shadow-sm"
+        >
+          <Edit size={16} />
+        </button>
+        <button
+          onClick={() => handleDelete(item.id)}
+          title="Delete Ad"
+          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 border border-slate-100 rounded-xl transition-all cursor-pointer shadow-sm"
+        >
+          <Trash2 size={16} />
+        </button>
+      </div>
+    ),
+  },
+];
 
   return (
     <div className="space-y-6">
@@ -186,7 +238,7 @@ console.log(data, "ok");
 
             <Button
               onClick={() => navigate("/seller/dashboard/ads/create")}
-              className="bg-[#0064AE] hover:bg-[#005596] text-white px-8 h-12 rounded-2xl font-bold shadow-lg shadow-blue-100 flex gap-2"
+              className="bg-[#0064AE] hover:bg-[#005596] text-white px-8 h-12 cursor-pointer rounded-2xl font-bold shadow-lg shadow-blue-100 flex gap-2"
             >
               <Plus size={20} strokeWidth={3} /> Post New Ad
             </Button>
@@ -259,9 +311,7 @@ console.log(data, "ok");
         {/* Pagination Section */}
         <div className="p-6 bg-slate-50/50 border-t border-slate-100">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-slate-500 font-medium">
-              Showing page {page} of {totalPages}
-            </p>
+           
             <CommonPagination
               currentPage={page}
               totalPages={totalPages || 1}

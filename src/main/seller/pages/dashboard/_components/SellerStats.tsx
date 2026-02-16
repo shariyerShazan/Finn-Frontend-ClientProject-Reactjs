@@ -1,40 +1,52 @@
-// import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { LayoutGrid, CheckCircle2, Eye } from "lucide-react";
+import { LayoutGrid, CheckCircle2, Eye, Loader2 } from "lucide-react";
 import { MdPayments } from "react-icons/md";
-
-const stats = [
-  {
-    label: "125",
-    subLabel: "Total Ads",
-    icon: LayoutGrid,
-    color: "text-green-600",
-    bg: "bg-green-50",
-  },
-  {
-    label: "10500",
-    subLabel: "Total Income",
-    icon: MdPayments,
-    color: "text-indigo-600",
-    bg: "bg-indigo-50",
-  },
-  {
-    label: "208",
-    subLabel: "Item sold",
-    icon: CheckCircle2,
-    color: "text-red-500",
-    bg: "bg-red-50",
-  },
-  {
-    label: "1230",
-    subLabel: "Total Ads Viewed",
-    icon: Eye,
-    color: "text-blue-500",
-    bg: "bg-blue-50",
-  },
-];
+import { useGetSellerStatsQuery } from "@/redux/fetures/users.api";
 
 const SellerStats = () => {
+  const { data, isLoading } = useGetSellerStatsQuery();
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Loader2 className="animate-spin text-blue-600" size={32} />
+      </div>
+    );
+  }
+
+  const statsData = data?.data || {};
+
+  const stats = [
+    {
+      label: statsData.totalAds || 0,
+      subLabel: "Total Ads",
+      icon: LayoutGrid,
+      color: "text-green-600",
+      bg: "bg-green-50",
+    },
+    {
+      label: `$${(statsData.totalIncome || 0).toLocaleString()}`,
+      subLabel: "Total Income",
+      icon: MdPayments,
+      color: "text-indigo-600",
+      bg: "bg-indigo-50",
+    },
+    {
+      label: statsData.itemSold || 0,
+      subLabel: "Item Sold",
+      icon: CheckCircle2,
+      color: "text-red-500",
+      bg: "bg-red-50",
+    },
+    {
+      label: statsData.totalAdsViewed || 0,
+      subLabel: "Total Ads Viewed",
+      icon: Eye,
+      color: "text-blue-500",
+      bg: "bg-blue-50",
+    },
+  ];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
       {stats.map((stat, index) => (

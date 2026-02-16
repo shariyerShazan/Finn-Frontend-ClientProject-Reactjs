@@ -183,7 +183,7 @@ const CreateAds = () => {
   };
 
   return (
-    <div className="p-6 mx-auto space-y-8 max-w-7xl">
+    <div className="p-4 mx-auto space-y-8 ">
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex flex-col lg:flex-row gap-8">
           <div className="flex-1 space-y-6">
@@ -206,7 +206,7 @@ const CreateAds = () => {
                   <div className="space-y-2">
                     <Label>Category *</Label>
                     <Select onValueChange={handleCategoryChange}>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
@@ -224,7 +224,7 @@ const CreateAds = () => {
                       onValueChange={handleSubCategoryChange}
                       disabled={!subCategories.length}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
@@ -249,7 +249,7 @@ const CreateAds = () => {
                       onValueChange={(v) => setValue("propertyFor", v)}
                       defaultValue="SALE"
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -292,7 +292,7 @@ const CreateAds = () => {
                             setValue(`spec_${field.key}`, v)
                           }
                         >
-                          <SelectTrigger className="bg-white">
+                          <SelectTrigger className="bg-white w-full">
                             <SelectValue placeholder="Choose" />
                           </SelectTrigger>
                           <SelectContent>
