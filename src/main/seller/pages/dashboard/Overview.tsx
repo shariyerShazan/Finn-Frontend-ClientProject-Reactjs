@@ -4,7 +4,7 @@ import SellerStats from "./_components/SellerStats";
 
 const SellerOverview = () => {
   return (
-    <div className="p-6 bg-[#F8FAFC] min-h-screen">
+    <div className="p-4 bg-[#F8FAFC] min-h-[80vh]">
       <div className=" mx-auto">
         {/* Welcome Text */}
         <div className="mb-8">

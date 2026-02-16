@@ -34,6 +34,7 @@ import SellerAllAds from "@/main/seller/pages/ads/allAds/SellerAllAds";
 import SellerPayments from "@/main/seller/pages/payments/SellerPayments";
 import CompleteSellerProfile from "@/main/seller/pages/create-profile/CompleteSellerProfile";
 import SellerEditAds from "@/main/seller/pages/ads/editAds/EditAds";
+import SellerPurchases from "@/main/user/Pages/my-purches/SellerPurchases";
 
 export const router = createBrowserRouter([
   {
@@ -85,7 +86,7 @@ export const router = createBrowserRouter([
 
       // if the role is user then show user dashboard layout after login or signup ..............User Dashboard Routes
       {
-        path: "user-dashboard",
+        path: "user/dashboard",
         element: <UserDashboardLayout />,
         children: [
           {
@@ -100,6 +101,10 @@ export const router = createBrowserRouter([
             path: "change-password",
             element: <ChangePassword />,
           },
+          {
+            path: "my-purchases",
+            element: <SellerPurchases />
+          }
         ],
       },
     ],

@@ -76,6 +76,23 @@ export const userApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+
+    getSellerStats: builder.query<any, void>({
+      query: () => ({
+        url: "/user/seller-stats",
+        method: "GET",
+      }),
+      providesTags: ["Ads", "User"],
+    }),
+
+    getSellerRecentAds: builder.query<any, { search?: string }>({
+      query: (params) => ({
+        url: "/user/seller-recent-ads",
+        method: "GET",
+        params: params,
+      }),
+      providesTags: ["Ads"],
+    }),
   }),
 });
 
@@ -87,5 +104,7 @@ export const {
   useGetSingleMyAdQuery,
   useGetMyEarningsQuery,
   useGetMyPurchasesQuery,
+  useGetSellerStatsQuery,
+  useGetSellerRecentAdsQuery,
   useGetSinglePaymentQuery,
 } = userApi;
