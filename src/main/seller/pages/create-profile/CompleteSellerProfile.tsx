@@ -29,21 +29,29 @@ export default function CompleteSellerProfile() {
     formState: { errors },
   } = useForm<SellerProfileForm>();
 
-  const onSubmit = async (data: SellerProfileForm) => {
-    try {
-      // Zip code ke number-e convert kora (karom DTO-te @IsInt ache)
-      const formattedData = {
-        ...data,
-        zip: Number(data.zip),
-      };
+const onSubmit = async (data: SellerProfileForm) => {
+  try {
+    const formattedData = {
+      ...data,
+      zip: Number(data.zip),
+    };
 
-      await createProfile(formattedData).unwrap();
-      toast.success("Seller profile and Stripe account created!");
-      navigate("/dashboard"); // Success hole dashboard-e pathan
-    } catch (err: any) {
-      toast.error(err?.data?.message || "Failed to create seller profile");
+    const response = await createProfile(formattedData).unwrap();
+    toast.success(
+      response?.message || "Profile created! Please wait for approval.",
+    );
+    navigate("/");
+  } catch (err: any) {
+    const errorMessage =
+      err?.data?.message || "Failed to create seller profile";
+
+    if (Array.isArray(errorMessage)) {
+      errorMessage.forEach((msg: string) => toast.error(msg));
+    } else {
+      toast.error(errorMessage);
     }
-  };
+  }
+};
 
   return (
     <div className="min-h-[80vh] bg-zinc-50 flex items-center justify-center p-4">
