@@ -5,7 +5,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 export const baseApi = createApi({
   reducerPath: "baseApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:3002",
+    baseUrl: "http://10.10.10.105:3002",
     credentials: "include",
     prepareHeaders: (headers) => {
       // Jodi auth token cookie charao header e thake, ekhane add koren

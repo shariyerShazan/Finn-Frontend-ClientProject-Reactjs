@@ -103,8 +103,8 @@ export const router = createBrowserRouter([
           },
           {
             path: "my-purchases",
-            element: <SellerPurchases />
-          }
+            element: <SellerPurchases />,
+          },
         ],
       },
     ],
@@ -143,16 +143,16 @@ export const router = createBrowserRouter([
       },
       {
         path: "Transactions",
-        element: <AdminTransactions />
+        element: <AdminTransactions />,
       },
       {
         path: "category",
-        element: <Category />
+        element: <Category />,
       },
       {
         path: "sub-category",
-        element: <SubCategory />
-      }
+        element: <SubCategory />,
+      },
     ],
   },
   {
@@ -160,33 +160,33 @@ export const router = createBrowserRouter([
     element: <SellerDashboardLayout />,
     children: [
       {
-        index: true ,
-        element: <SellerOverview />
+        index: true,
+        element: <SellerOverview />,
       },
       {
         path: "ads/create",
-        element: <CreateAds />
+        element: <CreateAds />,
       },
       {
         path: "ads/edit/:id",
-        element: <SellerEditAds />
+        element: <SellerEditAds />,
       },
       {
-        path: "chat" ,
-        element: <SellerChat />
+        path: "chat",
+        element: <SellerChat />,
       },
       {
-        path: "all-ads" ,
-        element: <SellerAllAds />
+        path: "all-ads",
+        element: <SellerAllAds />,
       },
       {
-        path: "payments" ,
-        element: <SellerPayments />
+        path: "payments",
+        element: <SellerPayments />,
       },
-      {
-        path: "create-seller-profile" ,
-        element: <CompleteSellerProfile />
-      }
-    ]
-  }
+    ],
+  },
+  {
+    path: "create-seller-profile",
+    element: <CompleteSellerProfile />,
+  },
 ]);

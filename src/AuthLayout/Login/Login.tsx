@@ -13,12 +13,13 @@ import { useLoginMutation, type LoginRequest } from "@/redux/fetures/auth.api";
 import { toast } from "react-toastify";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import loginImg from "@/assets/Login/login.jpg"
+import loginImg from "@/assets/Login/login.jpg";
+// import { retry } from "@reduxjs/toolkit/query";
 
 export default function LoginPage() {
   const navigate = useNavigate();
   const [login, { isLoading }] = useLoginMutation();
-const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -28,9 +29,23 @@ const [showPassword, setShowPassword] = useState(false);
   const onSubmit = async (data: LoginRequest) => {
     try {
       const response = await login(data).unwrap();
-      if (response.success) {
+
+      if (response.access_token) {
         toast.success(response.message || "Login successful");
-        navigate("/dashboard");
+
+        const { role, isSeller } = response.user as any;
+
+        if (role === "SELLER") {
+          if (isSeller) {
+            navigate("/seller/dashboard");
+          } else {
+            navigate("/create-seller-profile");
+          }
+        } else if (role === "USER") {
+          navigate("/");
+        } else {
+          navigate("/dashboard");
+        }
       }
     } catch (err: any) {
       const errorData =
