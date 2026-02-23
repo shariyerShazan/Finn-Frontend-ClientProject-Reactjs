@@ -4,10 +4,9 @@ import SearchChatSection from "./_components/SearchChatSection";
 // import Chats from "./_components/Chats";
 import { useGetMyConversationsQuery, useGetOnlineUsersQuery } from "@/redux/fetures/chat/chat.api";
 import Chats from "./_components/Chats";
-// import { Chats } from "./_components/Chats";
 
 
-const SellerChat = () => {
+const UserChat = () => {
   const { data, isLoading } = useGetMyConversationsQuery();
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
@@ -45,7 +44,7 @@ const SellerChat = () => {
             conversationId={activeChatId}
             activePartner={activeConversation?.participants[0]?.user}
             isBlocked={activeConversation?.isBlocked}
-            isOnline={isPartnerOnline}
+            isOnline={isPartnerOnline} // এখানে আমরা ক্যালকুলেট করা ভ্যালু পাঠাচ্ছি
           />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-50 text-gray-400">
@@ -57,7 +56,4 @@ const SellerChat = () => {
   );
 };
 
-export default SellerChat;
-
-
-
+export default UserChat;

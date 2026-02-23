@@ -11,7 +11,7 @@ function UserDashboardLayout() {
             <a href="/user-profile">Profile</a>
           </li>
           <li>
-            <a href="/user-chatbox">Chatbox</a>
+            <a href="/user/dashboard/chat">Chatbox</a>
           </li>
           <li>
             <a href="/change-password">Change Password</a>
