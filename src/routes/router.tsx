@@ -5,7 +5,7 @@ import Login from "../AuthLayout/Login/Login";
 import RegistrationDone from "../AuthLayout/RegistrationDone/RegistrationDone";
 import UserDashboardLayout from "../Layouts/UserDashboardLayout";
 import UserProfile from "../UserDashboard/UserProfile/UserProfile";
-import UserChatbox from "../UserDashboard/UserChatbox/UserChatbox";
+// import UserChatbox from "../UserDashboard/UserChatbox/UserChatbox";
 import ChangePassword from "../UserDashboard/ChangePassword/ChangePassword";
 import SellerDetails from "../AuthLayout/SellerDetails/SellerDetails";
 // import VerifyOtp from "@/AuthLayout/SignUp/_components/verifyOtp";
@@ -35,6 +35,7 @@ import SellerPayments from "@/main/seller/pages/payments/SellerPayments";
 import CompleteSellerProfile from "@/main/seller/pages/create-profile/CompleteSellerProfile";
 import SellerEditAds from "@/main/seller/pages/ads/editAds/EditAds";
 import SellerPurchases from "@/main/user/Pages/my-purches/SellerPurchases";
+import UserChat from "@/main/user/Pages/chats/UserChat";
 
 export const router = createBrowserRouter([
   {
@@ -94,8 +95,8 @@ export const router = createBrowserRouter([
             element: <UserProfile />,
           },
           {
-            path: "user-chatbox",
-            element: <UserChatbox />,
+            path: "chat",
+            element: <UserChat />,
           },
           {
             path: "change-password",

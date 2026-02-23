@@ -28,9 +28,12 @@ export default function LoginPage() {
 
   const onSubmit = async (data: LoginRequest) => {
     try {
-      const response = await login(data).unwrap();
+      const response : any = await login(data).unwrap();
 
       if (response.access_token) {
+        localStorage.setItem("token", response.access_token);
+
+        localStorage.setItem("userId", response.user.id);
         toast.success(response.message || "Login successful");
 
         const { role, isSeller } = response.user as any;

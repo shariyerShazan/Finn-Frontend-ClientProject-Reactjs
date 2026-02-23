@@ -7,7 +7,7 @@ import { Search, MoreHorizontal } from "lucide-react";
 const SearchChatSection = ({ conversations, activeId, onSelect }: any) => {
   const [searchQuery, setSearchQuery] = useState("");
   const { data: onlineData } = useGetOnlineUsersQuery(undefined, {
-    pollingInterval: 3000, // Reduced polling interval for faster updates
+    pollingInterval: 3000,
   });
 
   const onlineUsers = useMemo(() => onlineData?.users || [], [onlineData]);
@@ -66,7 +66,7 @@ const SearchChatSection = ({ conversations, activeId, onSelect }: any) => {
       {onlinePartners.length > 0 && (
         <div className="px-4 py-2">
           <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wider">
-            
+            Active Now
           </p>
           <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
             {onlinePartners.map((partner: any) => (
