@@ -35,7 +35,7 @@ import SellerPayments from "@/main/seller/pages/payments/SellerPayments";
 import CompleteSellerProfile from "@/main/seller/pages/create-profile/CompleteSellerProfile";
 import SellerEditAds from "@/main/seller/pages/ads/editAds/EditAds";
 import SellerPurchases from "@/main/user/Pages/my-purches/SellerPurchases";
-import UserChat from "@/main/user/Pages/chats/SellerChat";
+import UserChat from "@/main/user/Pages/chats/UserChat";
 
 export const router = createBrowserRouter([
   {
