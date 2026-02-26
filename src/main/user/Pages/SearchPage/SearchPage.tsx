@@ -1,115 +1,164 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useState } from "react";
-import { LayoutGrid, Map as MapIcon } from "lucide-react";
+import {
+  LayoutGrid,
+  Map as MapIcon,
+  Loader2,
+  PackageSearch,
+} from "lucide-react";
 import FilterSearch from "./_components/FilterSearch";
 import AdCard from "../HomePage/_components/AdCard";
 import CommonPagination from "../../_components/CommonPagination";
+import { useGetAllAdsQuery } from "@/redux/fetures/ads.api";
 
 const SearchPage = () => {
   const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
   const [filters, setFilters] = useState({
     search: "",
     isSold: "false",
-    sortByPrice: "asc",
+    sortByPrice: "asc" as "asc" | "desc",
     category: "",
     subCategory: "",
     page: 1,
     limit: 12,
   });
 
-  const dummyAds = Array.from({ length: 30 }).map((_, i) => ({
-    id: `${i + 1}`,
-    title:
-      i % 2 === 0 ? "Brooklyn Brownstone 4 Bedroom" : "Schwinn Hybrid Bike",
-    price: 28900,
-    city: i % 3 === 0 ? "Manhattan" : "Astoria",
-    state: "NY",
-    zipCode: "10089",
-    images: [
-      {
-        url:
-          i % 2 === 0
-            ? "https://images.unsplash.com/photo-1580587771525-78b9dba3b914"
-            : "https://images.unsplash.com/photo-1485965120184-e220f721d03e",
-      },
-    ],
-  }));
+  // 🚀 RTK Query: Sending all filters to backend
+  const { data, isLoading, isFetching } = useGetAllAdsQuery({
+    page: filters.page,
+    limit: filters.limit,
+    search: filters.search,
+    isSold: filters.isSold,
+    sortByPrice: filters.sortByPrice,
+    categoryId: filters.category === "all" ? "" : filters.category,
+    subCategoryId: filters.subCategory === "all" ? "" : filters.subCategory,
+  });
+
+  const ads = data?.data || [];
+  const meta = data?.meta || { total: 0, page: 1, limit: 12 };
+
+  // Calculate total pages based on backend meta
+  const totalPages = Math.ceil(meta.total / meta.limit) || 1;
 
   return (
     <div className="min-h-screen bg-gray-50/30">
-      {/* Top Filter Bar */}
+      {/* 🔍 Sticky Filter Section */}
       <FilterSearch filters={filters} setFilters={setFilters} />
 
-      <div className=" mx-auto ">
-        {/* 📊 Header: Count + View Toggle */}
-        <div className="sticky top-30 z-50 py-2 px-6 bg-white/80 backdrop-blur-md">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 ">
+      <div className="mx-auto px-6 pb-12">
+        {/* 📊 Header Section */}
+        <div className="sticky top-30 z-40 py-4 bg-gray-50/30 backdrop-blur-md">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
               <h2 className="text-gray-800 text-base font-semibold flex items-center gap-2">
-                Found <span className="text-[#0064AE] text-xl">48</span> Ads for
-                your search
+                Found{" "}
+                <span className="text-[#0064AE] text-xl font-bold">
+                  {isFetching ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : (
+                    meta.total
+                  )}
+                </span>{" "}
+                Ads for your search
               </h2>
             </div>
 
-            {/* 🔄 View Switcher Buttons */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-sm">
+            {/* View Switcher Controls */}
+            <div className="flex items-center bg-white p-1 rounded-xl border border-slate-200 shadow-sm">
               <button
                 onClick={() => setViewMode("grid")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                   viewMode === "grid"
-                    ? "bg-white text-[#0064AE] shadow-md"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-[#0064AE] text-white shadow-md"
+                    : "text-slate-500 hover:bg-slate-50"
                 }`}
               >
-                <LayoutGrid
-                  size={18}
-                  strokeWidth={viewMode === "grid" ? 2.5 : 2}
-                />
+                <LayoutGrid size={18} />
               </button>
-
               <button
                 onClick={() => setViewMode("map")}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${
                   viewMode === "map"
-                    ? "bg-white text-[#0064AE] shadow-md"
-                    : "text-slate-500 hover:text-slate-700"
+                    ? "bg-[#0064AE] text-white shadow-md"
+                    : "text-slate-500 hover:bg-slate-50"
                 }`}
               >
-                <MapIcon size={18} strokeWidth={viewMode === "map" ? 2.5 : 2} />
+                <MapIcon size={18} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* 📦 Main Content Area */}
-        {viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 gap-6 animate-in fade-in duration-500">
-            {dummyAds.map((add, i) => (
-              <AdCard key={i} ad={add} />
-            ))}
+        {/* 📦 Main Display Area */}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-[50vh]">
+            <Loader2 className="animate-spin text-[#0064AE] mb-3" size={48} />
+            <p className="text-slate-500 font-medium animate-pulse">
+              Curating the best ads for you...
+            </p>
           </div>
-        ) : (
-          <div className="w-full h-[600px] bg-slate-200/50 rounded-3xl border-2 border-dashed border-slate-300 flex items-center justify-center animate-in zoom-in duration-300">
-            <div className="text-center">
-              <div className="bg-white p-4 rounded-full shadow-lg mb-4 inline-block">
-                <MapIcon size={40} className="text-[#0064AE]" />
+        ) : viewMode === "grid" ? (
+          <>
+            {ads.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-x-6 gap-y-12 animate-in fade-in duration-700">
+                {ads.map((ad: any) => (
+                  <AdCard key={ad.id} ad={ad} />
+                ))}
               </div>
-              <h3 className="text-lg font-bold text-slate-800">
+            ) : (
+              <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center">
+                <PackageSearch size={64} className="text-slate-300 mb-4" />
+                <h3 className="text-xl font-bold text-slate-800">
+                  No results found
+                </h3>
+                <p className="text-slate-500 max-w-xs mx-auto mt-2">
+                  Try adjusting your filters or search keywords to find what
+                  you're looking for.
+                </p>
+                <button
+                  onClick={() =>
+                    setFilters({
+                      ...filters,
+                      search: "",
+                      category: "all",
+                      subCategory: "all",
+                    })
+                  }
+                  className="mt-6 text-[#0064AE] font-bold hover:underline"
+                >
+                  Clear all filters
+                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="w-full h-[60vh] bg-slate-100 rounded-3xl border border-slate-200 flex items-center justify-center animate-in zoom-in duration-300">
+            <div className="text-center">
+              <MapIcon
+                size={56}
+                className="text-[#0064AE] mx-auto mb-4 opacity-20"
+              />
+              <h3 className="text-xl font-bold text-slate-800">
                 Map Interface Ready
               </h3>
-              <p className="text-slate-500 text-sm">
-                Bhai, ekhane map render korle visual-ta pura joss lagbe!
+              <p className="text-slate-500 italic">
+                Bhai, Google Maps API key dilei visual-ta joss hobe!
               </p>
             </div>
           </div>
         )}
 
-        {/* Pagination Section */}
-        <CommonPagination
-          currentPage={filters.page}
-          totalPages={5}
-          onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
-        />
+        {/* 📄 Pagination Controls */}
+        {!isLoading && totalPages > 1 && (
+          <div className="mt-20 flex justify-center">
+            <CommonPagination
+              currentPage={filters.page}
+              totalPages={totalPages}
+              onPageChange={(page) => setFilters((prev) => ({ ...prev, page }))}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

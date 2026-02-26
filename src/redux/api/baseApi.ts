@@ -21,6 +21,7 @@ export const baseApi = createApi({
     "Ads",
     "Chat",
     "OnlineUsers",
+    "Comments",
   ],
   endpoints: () => ({}),
 });
