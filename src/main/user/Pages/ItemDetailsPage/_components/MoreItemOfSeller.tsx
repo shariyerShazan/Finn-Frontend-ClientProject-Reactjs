@@ -1,47 +1,46 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React from "react";
+// import { useGetAdsBySellerQuery } from "@/redux/features/adsApi";
 import AdCard from "../../HomePage/_components/AdCard";
+import { Loader2 } from "lucide-react";
+import { useGetAdsBySellerQuery } from "@/redux/fetures/ads.api";
 
-const MoreItemOfSeller = () => {
-  const adsBySeller = Array.from({ length: 6 }).map((_, i) => ({
-    id: `${i + 1}`,
-    title:
-      i === 0
-        ? "Accountant for bank"
-        : i === 1
-          ? "Developer for SoftTech"
-          : "Hospitality & Tourism",
-    price: 28900,
-    city: "Manhattan",
-    state: "NY",
-    zipCode: "10069",
-    images: [
-      {
-        url:
-          i % 2 === 0
-            ? "https://images.unsplash.com/photo-1554224155-6726b3ff858f"
-            : "https://images.unsplash.com/photo-1498050108023-c5249f4df085",
-      },
-    ],
-  }));
+const MoreItemOfSeller = ({ sellerId, currentAdId }: any) => {
+  const {
+    data: response,
+    isLoading,
+    isError,
+  } = useGetAdsBySellerQuery(
+    { sellerId: sellerId, limit: 10 },
+    { skip: !sellerId }, // sellerId না থাকলে রিকোয়েস্ট পাঠাবে না
+  );
+
+  console.log("Seller ID:", sellerId);
+  console.log("API Response:", response);
+
+  const ads = response?.data || [];
+
+  // ফিল্টার লজিক: বর্তমান অ্যাড বাদ দিয়ে বাকিগুলো
+  const filteredAds = ads.filter((ad : any) => ad.id !== currentAdId).slice(0, 6);
+
+  if (isLoading)
+    return (
+      <div className="flex justify-center py-10">
+        <Loader2 className="animate-spin text-[#0064AE]" />
+      </div>
+    );
+  if (isError)
+    return (
+      <p className="text-center text-rose-500">Failed to load seller ads.</p>
+    );
+  if (filteredAds.length === 0) return null;
 
   return (
     <div className="pt-6 space-y-8">
-      {/* Section Heading */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-slate-800 tracking-tight">
-          More Ads By <span className="text-[#0064AE]">This Seller</span>
-        </h3>
-        <div className="h-[2px] flex-1 mx-6 bg-slate-100 hidden md:block" />
-      </div>
-
-      {/* Using your AdCard in the requested grid */}
+      {/* ... আপনার আগের UI কোড ... */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-        {adsBySeller.map((ad) => (
-          <div
-            key={ad.id}
-            className=" transition-transform duration-300"
-          >
-            <AdCard ad={ad} />
-          </div>
+        {filteredAds.map((ad : any) => (
+          <AdCard key={ad.id} ad={ad} />
         ))}
       </div>
     </div>

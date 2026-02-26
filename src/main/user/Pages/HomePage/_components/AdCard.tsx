@@ -10,7 +10,7 @@ const AdCard = ({ ad }: { ad: any }) => {
 
   return (
     <div
-      onClick={() => navigate("/item-details/hhh")}
+      onClick={() => navigate(`/item-details/${ad.id}`)}
       className=" transition-all duration-300 group cursor-pointer overflow-hidden"
     >
       {/* Image Section */}

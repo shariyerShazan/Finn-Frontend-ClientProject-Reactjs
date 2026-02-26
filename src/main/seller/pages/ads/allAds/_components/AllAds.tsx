@@ -156,7 +156,7 @@ const columns: Column<AdData>[] = [
       <div className="flex items-center gap-1.5 px-3 py-1 bg-slate-50 rounded-full w-fit">
         <Eye size={14} className="text-blue-500" />
         <span className="text-sm font-semibold text-slate-700">
-          {(item as any).views || 0}
+          {(item as any).viewerIds.length || 0}
         </span>
       </div>
     ),

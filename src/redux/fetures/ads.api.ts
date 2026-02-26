@@ -13,6 +13,7 @@ export const adsApi = baseApi.injectEndpoints({
         search?: string;
         isSold?: string;
         sortByPrice?: "asc" | "desc";
+        subCategoryId: string;
         categoryId?: string;
       }
     >({
@@ -43,7 +44,10 @@ export const adsApi = baseApi.injectEndpoints({
       invalidatesTags: ["Ad"],
     }),
 
-    updateAd: builder.mutation<any, { adId: string | undefined; data: FormData }>({
+    updateAd: builder.mutation<
+      any,
+      { adId: string | undefined; data: FormData }
+    >({
       query: ({ adId, data }) => ({
         url: `/ads/${adId}`,
         method: "PATCH",
@@ -87,6 +91,13 @@ export const adsApi = baseApi.injectEndpoints({
         method: "GET",
       }),
     }),
+    getAdsBySeller: builder.query({
+      query: ({ sellerId, page = 1, limit = 10, isSold = "" }) => ({
+        url: `/ads/seller/${sellerId}`,
+        params: { page, limit, isSold },
+      }),
+      providesTags: ["Ads"],
+    }),
   }),
 });
 
@@ -99,4 +110,5 @@ export const {
   useToggleSoldStatusMutation,
   useRecordAdViewMutation,
   useGetAdViewersQuery,
+  useGetAdsBySellerQuery,
 } = adsApi;
