@@ -1,194 +1,245 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo, useState } from "react";
+"use client";
+import { useState } from "react";
 import CommonPagination from "@/main/user/_components/CommonPagination";
 import CommonTable from "@/main/user/_components/CustomTable";
-import { Eye, Mail, Search, ChevronDown } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
-/* ----------------------------------
- Mock Data (realistic & scalable)
------------------------------------ */
-const REPORTS = Array.from({ length: 18 }).map((_, i) => ({
-  id: i + 1,
-  user: {
-    name: `User ${i + 1}`,
-    image: `https://i.pravatar.cc/150?u=${i + 1}`,
-  },
-  ad: {
-    title: "2BR Condo with Huge Balcony",
-    price: `$${(12000 + i * 250).toLocaleString()}`,
-    image:
-      "https://play-lh.googleusercontent.com/AViRY0huu7udMnyxtCsk0xUlpCbABp3zH-kf1Pcyi8LKV3vOtLIY78K5YmuhR8dnVcc=w240-h480-rw",
-  },
-  message: "Hey! I want to report this ad for misleading info.",
-  createdAt: new Date(Date.now() - i * 86400000), // date diff
-}));
-
-const PAGE_SIZE = 5;
+import {
+  Eye,
+  // Search,
+  Loader2,
+  Trash2,
+  CheckCircle2,
+  Clock,
+  // Ban,
+  CheckCircle,
+  ShieldCheck,
+  ShieldAlert,
+} from "lucide-react";
+import {
+  useGetAllReportsQuery,
+  useDeleteReportMutation,
+  useGetReportByIdQuery,
+  useResolveReportMutation,
+  // useSuspendAuthMutation,
+} from "@/redux/fetures/admin/report.api";
+import { toast } from "react-toastify";
+import ReportActionDialog from "./_components/ReportDetails";
+// import ReportActionDialog from "./_components/ReportActionDialog";
 
 const AdminReport = () => {
   const [currentPage, setCurrentPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<"new" | "old">("new");
-const navigate = useNavigate()
-  /* ----------------------------------
-   Filter + Sort + Search
-  ----------------------------------- */
-  const processedData = useMemo(() => {
-    let data = [...REPORTS];
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-    if (search) {
-      data = data.filter(
-        (r) =>
-          r.user.name.toLowerCase().includes(search.toLowerCase()) ||
-          r.ad.title.toLowerCase().includes(search.toLowerCase()),
-      );
+  // --- API Hooks ---
+  const { data: response, isLoading } = useGetAllReportsQuery({
+    page: currentPage,
+    limit: 10,
+  });
+
+  const { data: detailResponse, isFetching: isDetailLoading } =
+    useGetReportByIdQuery(selectedReportId as string, {
+      skip: !selectedReportId,
+    });
+
+  const [deleteReport] = useDeleteReportMutation();
+  const [resolveReport, { isLoading: isResolving }] =
+    useResolveReportMutation();
+  // const [suspendAuth, { isLoading: isSuspending }] = useSuspendAuthMutation();
+
+  const reports = response?.data || [];
+  const meta = response?.meta;
+
+  // --- Action Handlers ---
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this report record?")) return;
+    try {
+      await deleteReport(id).unwrap();
+      toast.success("Report deleted successfully");
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Delete failed");
     }
+  };
+  const handleQuickResolve = async (id: string) => {
+    try {
+      const res = await resolveReport(id).unwrap();
+      toast.success(res.message || "Report marked as resolved");
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to resolve");
+    }
+  };
 
-    data.sort((a, b) =>
-      sort === "new"
-        ? b.createdAt.getTime() - a.createdAt.getTime()
-        : a.createdAt.getTime() - b.createdAt.getTime(),
-    );
-
-    return data;
-  }, [search, sort]);
-
-  const totalPages = Math.ceil(processedData.length / PAGE_SIZE);
-  const paginatedData = processedData.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
-  );
-
-  /* ----------------------------------
-   Table Columns
-  ----------------------------------- */
   const columns = [
     {
-      header: "Name",
+      header: "Reporter & ID",
       render: (item: any) => (
         <div className="flex items-center gap-3">
-          <img
-            src={item.user.image}
-            className="w-10 h-10 rounded-full border border-slate-100 object-cover"
-          />
-          <span className="text-sm font-bold text-slate-700">
-            {item.user.name}
-          </span>
-        </div>
-      ),
-    },
-    {
-      header: "Ads",
-      render: (item: any) => (
-        <div className="flex items-center gap-3">
-          <img
-            src={
-              item.ad.image ||
-              "https://play.google.com/store/apps/details?id=be.persgroep.red.mobile.android.adn"
-            }
-            className="w-10 h-10 rounded-xl object-cover"
-          />
+          <div className="relative">
+            <img
+              src={
+                item?.reporter.profilePicture ||
+                `https://api.dicebear.com/7.x/initials/svg?seed=${item.nickName}`
+              }
+              className="w-10 h-10 rounded-xl object-cover border border-slate-100"
+            />
+            <div
+              className={`absolute -right-1 -bottom-1 p-0.5 rounded-full border border-white ${item.isVerified ? "bg-blue-500" : "bg-amber-500"}`}
+            >
+              {item.isVerified ? (
+                <ShieldCheck size={10} className="text-white" />
+              ) : (
+                <ShieldAlert size={10} className="text-white" />
+              )}
+            </div>
+          </div>
           <div>
-            <p className="text-xs font-bold text-slate-800 line-clamp-1">
-              {item.ad.title}
-            </p>
-            <p className="text-[11px] font-bold text-[#0064AE]">
-              {item.ad.price}
-            </p>
+            <span className="text-sm font-black text-slate-800 block mb-0.5">
+              {item.reporter?.nickName || "Unknown"}
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">
+              ID: {item.id.slice(0, 8)}
+            </span>
           </div>
         </div>
       ),
     },
+    //
     {
-      header: "Message",
+      header: "Reason",
       render: (item: any) => (
-        <span className="text-xs font-semibold text-[#0064AE] hover:underline cursor-pointer">
-          {item.message}
+        <span
+          className={`text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-tighter ${
+            item.status === "RESOLVED"
+              ? "bg-slate-100 text-slate-400"
+              : "bg-rose-50 text-rose-600"
+          }`}
+        >
+          {item.reason}
         </span>
       ),
     },
     {
-      header: "Date",
+      header: "Given Note",
       render: (item: any) => (
-        <div>
-          <p className="text-xs font-bold text-slate-600">
-            {item.createdAt.toLocaleDateString()}
-          </p>
-          <p className="text-[10px] font-medium text-slate-400">
-            {item.createdAt.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
+        <span
+          className={`text-[11px] font-black px-2 py-1 rounded-md text-gray-500`}
+        >
+          {item.description?.slice(0, 25)}{" "}
+          {item.description.split("").length > 25 && "..."}
+        </span>
+      ),
+    },
+    {
+      header: "Status",
+      render: (item: any) => (
+        <div className="flex items-center gap-1.5">
+          {item.status === "PENDING" ? (
+            <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-2 py-1 rounded-full border border-amber-100 flex items-center gap-1">
+              <Clock size={12} /> PENDING
+            </span>
+          ) : (
+            <span className="text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100 flex items-center gap-1">
+              <CheckCircle2 size={12} /> RESOLVED
+            </span>
+          )}
         </div>
       ),
     },
     {
-      header: "Action",
-      render: () => (
+      header: "Quick Actions",
+      render: (item: any) => (
         <div className="flex items-center gap-2">
-          <button onClick={() => navigate("ksfj")} className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-[#0064AE] transition">
-            <Eye size={16} strokeWidth={2.5} />
+          {/* View Details */}
+          <button
+            onClick={() => {
+              setSelectedReportId(item.id);
+              setIsModalOpen(true);
+            }}
+            title="View Details"
+            className="p-2 cursor-pointer rounded-lg border border-slate-200 text-slate-400 hover:text-[#0064AE] hover:bg-[#0064AE]/5 transition-all"
+          >
+            <Eye size={17} strokeWidth={2.5} />
           </button>
-          <button className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-slate-600 transition">
-            <Mail size={16} strokeWidth={2.5} />
+
+          {/* Quick Resolve Button */}
+          {item.status === "PENDING" && (
+            <button
+              onClick={() => handleQuickResolve(item.id)}
+              disabled={isResolving}
+              title="Mark Resolved"
+              className="p-2 cursor-pointer rounded-lg border border-slate-200 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 transition-all"
+            >
+              <CheckCircle size={17} strokeWidth={2.5} />
+            </button>
+          )}
+
+          {/* Delete Button */}
+          <button
+            onClick={() => handleDelete(item.id)}
+            title="Delete Report"
+            className="p-2 cursor-pointer rounded-lg border border-slate-200   text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-all"
+          >
+            <Trash2 size={17} strokeWidth={2.5} />
           </button>
         </div>
       ),
     },
   ];
 
+  if (isLoading)
+    return (
+      <div className="p-20 flex justify-center">
+        <Loader2 className="animate-spin text-[#0064AE]" size={40} />
+      </div>
+    );
+
   return (
     <div className="p-4">
-      <div className="p-4 bg-white rounded-xl border border-slate-100 shadow-sm">
-        {/* Header / Filters */}
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-bold text-slate-500">Filter</span>
-
-            <button
-              onClick={() => {
-                setSort(sort === "new" ? "old" : "new");
-                setCurrentPage(1);
-              }}
-              className="flex items-center gap-4 px-4 py-2.5 bg-slate-50 rounded-2xl border border-slate-100 text-sm font-bold text-slate-700 hover:bg-slate-100 transition"
-            >
-              {sort === "new" ? "Newest" : "Oldest"}
-              <ChevronDown size={16} />
-            </button>
+      <div className="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+        <div className="flex justify-between items-center mb-10">
+          <div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+              System Reports
+            </h2>
+            <p className="text-xs text-slate-400 font-medium">
+              Review and enforce community guidelines
+            </p>
           </div>
-
-          <div className="relative w-full sm:w-72">
+          {/* <div className="relative">
             <Search
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300"
               size={18}
             />
             <input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Search reports..."
-              className="w-full pl-12 pr-4 py-2.5 bg-slate-50 border border-slate-100 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-100"
+              placeholder="Filter reports..."
+              className="pl-12 pr-6 py-3 bg-slate-50 border-none rounded-2xl text-sm w-64 focus:ring-2 focus:ring-[#0064AE]/10 transition-all outline-none"
             />
-          </div>
+          </div> */}
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <CommonTable columns={columns} data={reports} />
         </div>
 
-        {/* Table */}
-        <CommonTable columns={columns} data={paginatedData} />
-
-        {/* Pagination */}
-        <div className="mt-8 pt-6 border-t border-slate-50 flex justify-between items-center">
-
+        <div className=" p-4 border-t border-slate-50">
           <CommonPagination
             currentPage={currentPage}
-            totalPages={totalPages}
+            totalPages={meta?.totalPage || 1}
             onPageChange={setCurrentPage}
           />
         </div>
       </div>
+
+      {/* 🔥 ডিটেইলস এবং অ্যাকশন মডাল */}
+      <ReportActionDialog
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedReportId(null);
+        }}
+        report={detailResponse?.data}
+        isLoading={isDetailLoading}
+      />
     </div>
   );
 };

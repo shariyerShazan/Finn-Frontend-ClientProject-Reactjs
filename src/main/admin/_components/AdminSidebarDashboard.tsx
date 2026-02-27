@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { TbCategory2 } from "react-icons/tb";
 import { TiFlowChildren } from "react-icons/ti";
+import { LuGitPullRequestArrow } from "react-icons/lu";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -28,6 +29,11 @@ const AdminSidebarDashboard = ({
     { name: "Overview", icon: LayoutDashboard, path: "/admin/dashboard" },
     { name: "User Directory", icon: Users, path: "/admin/dashboard/users" },
     { name: "Seller Directory", icon: Users, path: "/admin/dashboard/sellers" },
+    {
+      name: "Seller Request",
+      icon: LuGitPullRequestArrow,
+      path: "/admin/dashboard/requested-seller",
+    },
     {
       name: "Reports",
       icon: ShieldCheck,

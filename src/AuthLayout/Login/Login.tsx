@@ -170,7 +170,7 @@ export default function LoginPage() {
               <Button
                 disabled={isLoading}
                 type="submit"
-                className="w-full bg-[#0064AE] hover:bg-[#005494] text-white py-7 text-lg font-semibold rounded-2xl transition-all active:scale-[0.98]"
+                className="w-full bg-[#0064AE] cursor-pointer hover:bg-[#005494] text-white py-7 text-lg font-semibold rounded-2xl transition-all active:scale-[0.98]"
               >
                 {isLoading ? <Loader2 className="animate-spin" /> : "Continue"}
               </Button>

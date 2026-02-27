@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 
 // Components
@@ -31,6 +31,7 @@ import {
   useGetAdByIdQuery,
   useRecordAdViewMutation,
 } from "@/redux/fetures/ads.api";
+import ReportAdModal from "./_components/ReportAdModal";
 
 function ItemDetailsPage() {
   const { id } = useParams();
@@ -129,13 +130,7 @@ function ItemDetailsPage() {
             >
               <Share2 size={16} /> Share
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full gap-2 text-rose-500 border-rose-100 hover:bg-rose-50 transition-all"
-            >
-              <Flag size={16} /> Report
-            </Button>
+            <ReportAdModal adId={ad.id} adTitle={ad.title} />
           </div>
         </div>
       </div>

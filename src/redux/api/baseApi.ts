@@ -22,6 +22,11 @@ export const baseApi = createApi({
     "Chat",
     "OnlineUsers",
     "Comments",
+    "Reports",
+    "AdminStats",
+    "Auth",
+    "Sellers",
+    "Payments",
   ],
   endpoints: () => ({}),
 });

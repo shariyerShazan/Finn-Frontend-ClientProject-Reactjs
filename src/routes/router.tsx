@@ -19,10 +19,10 @@ import AdminOverview from "@/main/admin/pages/overview/AdminOverview";
 import AllBuyers from "@/main/admin/pages/allUsers/AllBuyers";
 import AllSellers from "@/main/admin/pages/allSellers/AllSellers";
 // import ViewUser from "@/main/admin/_components/viewUser/ViewUser";
-import ViewBuyerD from "@/main/admin/pages/allUsers/_components/ViewBuyerD";
-import ViewSellerD from "@/main/admin/pages/allSellers/_components/ViewSellerD";
+// import ViewBuyerD from "@/main/admin/pages/allUsers/_components/ViewBuyerD";
+// import ViewSellerD from "@/main/admin/pages/allSellers/_components/ViewSellerD";
 import AdminReport from "@/main/admin/pages/report/AdminReport";
-import ReportDetails from "@/main/admin/pages/report/_components/ReportDetails";
+// import ReportDetails from "@/main/admin/pages/report/_components/ReportDetails";
 import AdminTransactions from "@/main/admin/pages/Transactions/AdminTransactions";
 import Category from "@/main/admin/pages/Category/Category/Category";
 import SubCategory from "@/main/admin/pages/Category/SubCategory/SubCategory";
@@ -36,6 +36,7 @@ import CompleteSellerProfile from "@/main/seller/pages/create-profile/CompleteSe
 import SellerEditAds from "@/main/seller/pages/ads/editAds/EditAds";
 import SellerPurchases from "@/main/user/Pages/my-purches/SellerPurchases";
 import UserChat from "@/main/user/Pages/chats/UserChat";
+import SellerRequests from "@/main/admin/pages/seller-request/SellerRequests";
 
 export const router = createBrowserRouter([
   {
@@ -45,6 +46,10 @@ export const router = createBrowserRouter([
       {
         path: "/",
         element: <HomePage />,
+      },
+      {
+        path: "create-seller-profile",
+        element: <CompleteSellerProfile />,
       },
       {
         path: "search",
@@ -127,21 +132,25 @@ export const router = createBrowserRouter([
         element: <AllSellers />,
       },
       {
-        path: "users/:id",
-        element: <ViewBuyerD />,
+        path: "requested-seller",
+        element: <SellerRequests />,
       },
-      {
-        path: "sellers/:id",
-        element: <ViewSellerD />,
-      },
+      // {
+      //   path: "users/:id",
+      //   element: <ViewBuyerD />,
+      // },
+      // {
+      //   path: "sellers/:id",
+      //   element: <ViewSellerD />,
+      // },
       {
         path: "reports",
         element: <AdminReport />,
       },
-      {
-        path: "reports/:id",
-        element: <ReportDetails />,
-      },
+      // {
+      //   path: "reports/:id",
+      //   element: <ReportDetails />,
+      // },
       {
         path: "Transactions",
         element: <AdminTransactions />,
@@ -185,9 +194,5 @@ export const router = createBrowserRouter([
         element: <SellerPayments />,
       },
     ],
-  },
-  {
-    path: "create-seller-profile",
-    element: <CompleteSellerProfile />,
   },
 ]);

@@ -29,7 +29,7 @@ export default function SignUp() {
     register,
     handleSubmit,
     control,
-    watch, // পাসওয়ার্ড ফিল্ড ট্র্যাক করার জন্য
+    watch, 
     formState: { errors },
   } = useForm<RegisterRequest & { confirmPassword: string }>({
     defaultValues: {
@@ -198,7 +198,7 @@ export default function SignUp() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400"
+                    className="absolute cursor-pointer right-4 top-1/2 -translate-y-1/2 text-zinc-400"
                   >
                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
@@ -232,7 +232,7 @@ export default function SignUp() {
               <Button
                 disabled={isLoading}
                 type="submit"
-                className="col-span-2 bg-[#0064AE] hover:bg-[#005494] text-white py-7 text-lg font-semibold rounded-2xl mt-4"
+                className="col-span-2 cursor-pointer bg-[#0064AE] hover:bg-[#005494] text-white py-7 text-lg font-semibold rounded-2xl mt-4"
               >
                 {isLoading ? (
                   <Loader2 className="animate-spin" />

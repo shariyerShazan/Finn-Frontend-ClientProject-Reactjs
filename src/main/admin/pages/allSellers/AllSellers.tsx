@@ -1,8 +1,17 @@
-import { useState, useMemo } from "react";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState } from "react";
 import CommonPagination from "@/main/user/_components/CommonPagination";
 import CommonTable, { type Column } from "@/main/user/_components/CustomTable";
-import { Eye, Ban, Mail, Search } from "lucide-react";
-// import ViewUser from "../overview/_components/ViewUser";
+import {
+  Eye,
+  Search,
+  Loader2,
+  Ban,
+  Trash2,
+  ShieldCheck,
+  Filter,
+  ShieldAlert,
+} from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -10,91 +19,257 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useNavigate } from "react-router-dom";
-
-interface SellerData {
-  id: number;
-  name: string;
-  accountType: string;
-  phone: string;
-  email: string;
-  bids: number;
-  image: string;
-}
-
-const ITEMS_PER_PAGE = 5; // Ek page-e koyta data dekhabe
+import {
+  useGetUsersQuery,
+  useDeleteSellerMutation,
+  useToggleSuspensionMutation,
+} from "@/redux/fetures/admin/admin.api";
+import SellerViewModal from "./_components/ViewSellerD";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 const AllSellers = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-//   const [selectedUser, setSelectedUser] = useState<SellerData | null>(null);
-//   const [isModalOpen, setIsModalOpen] = useState(false);
-const navigate = useNavigate()
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Sample Data (14 items for testing pagination)
-  const data: SellerData[] = Array.from({ length: 14 }).map((_, i) => ({
-    id: i + 1,
-    name: i % 2 === 0 ? "Sam Abid" : "Avah Shelton",
-    accountType: "Seller",
-    phone: "+123456709",
-    email: i % 2 === 0 ? `abid${i}@email.com` : `avah${i}@email.com`,
-    bids: 20 + i,
-    image: `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`,
-  }));
+  const [selectedSeller, setSelectedSeller] = useState<string>("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. Functional Search Logic
-  const filteredData = useMemo(() => {
-    return data.filter(
-      (user) =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-  }, [searchTerm, data]);
+  // RTK Query Fetching
+  const {
+    data: response,
+    isLoading,
+    isError,
+  } = useGetUsersQuery({
+    page: currentPage,
+    limit: 10,
+    role: "SELLER",
+    search: searchTerm,
+    isSuspended:
+      statusFilter === "Suspended"
+        ? "true"
+        : statusFilter === "Active"
+          ? "false"
+          : undefined,
+  });
 
-  // 2. Functional Pagination Logic
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
+  const [deleteSeller] = useDeleteSellerMutation();
+  const [toggleSuspension] = useToggleSuspensionMutation();
 
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    const end = start + ITEMS_PER_PAGE;
-    return filteredData.slice(start, end);
-  }, [filteredData, currentPage]);
+  const sellers = response?.data?.result || response?.data || [];
+  const meta = response?.data?.meta || response?.meta;
 
-  const columns: Column<SellerData>[] = [
+  const handleQuickDelete = async (id: string) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "This seller will be permanently deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48", // rose-600
+      cancelButtonColor: "#64748b", // slate-500
+      confirmButtonText: "Yes, delete it!",
+      customClass: {
+        popup: "rounded-xl",
+      },
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await deleteSeller(id).unwrap();
+          Swal.fire({
+            title: "Deleted!",
+            text: "Seller has been removed.",
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false,
+            customClass: { popup: "rounded-xl" },
+          });
+        } catch (err) {
+          console.log(err)
+          toast.error("Operation failed.");
+        }
+      }
+    });
+  };
+
+  const handleQuickSuspension = async (
+    id: string,
+    isCurrentlySuspended: boolean,
+  ) => {
+    if (isCurrentlySuspended) {
+      // সরাসরি এক্টিভেট করার জন্য
+      Swal.fire({
+        title: "Reactivate Account?",
+        text: "This seller will gain access again.",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#10b981", // emerald-500
+        confirmButtonText: "Yes, activate!",
+        customClass: { popup: "rounded-xl" },
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            await toggleSuspension({ userId: id, reason: "" }).unwrap();
+            toast.success("Account Restored");
+          } catch (err) {
+            console.log(err);
+            toast.error("Action failed");
+          }
+        }
+      });
+    } else {
+      const { value: reason } = await Swal.fire({
+        title: "Suspension Reason",
+        input: "textarea",
+        inputLabel: "Why are you suspending this seller?",
+        inputPlaceholder: "Enter reason here...",
+        inputAttributes: { "aria-label": "Enter reason" },
+        showCancelButton: true,
+        confirmButtonColor: "#f59e0b",
+        confirmButtonText: "Suspend Now",
+        customClass: { popup: "rounded-xl" },
+        inputValidator: (value) => {
+          if (!value) return "You need to provide a reason!";
+        },
+      });
+
+      if (reason) {
+        try {
+          await toggleSuspension({ userId: id, reason }).unwrap();
+          toast.success("Account Suspended");
+        } catch (err) {
+          console.log(err);
+          toast.error("Action failed");
+        }
+      }
+    }
+  };
+  const columns: Column<any>[] = [
     {
-      header: "Name",
+      header: "Identity",
       render: (item) => (
         <div className="flex items-center gap-3">
-          <img
-            src={item.image}
-            className="w-10 h-10 rounded-full border border-slate-200 object-cover"
-            alt=""
-          />
-          <span className="font-medium text-slate-700">{item.name}</span>
+          <div className="relative">
+            <img
+              src={
+                item.profilePicture ||
+                `https://api.dicebear.com/7.x/initials/svg?seed=${item.nickName}`
+              }
+              className="w-10 h-10 rounded-xl object-cover border border-slate-100"
+            />
+            <div
+              className={`absolute -right-1 -bottom-1 p-0.5 rounded-full border border-white ${item.isVerified ? "bg-blue-500" : "bg-amber-500"}`}
+            >
+              {item.isVerified ? (
+                <ShieldCheck size={10} className="text-white" />
+              ) : (
+                <ShieldAlert size={10} className="text-white" />
+              )}
+            </div>
+          </div>
+
+          <div>
+            <span className="font-bold text-slate-800 block text-sm leading-tight">
+              {item.nickName}
+            </span>
+            <span className="text-[10px] text-slate-400 font-semibold uppercase">
+              {new Date(item.createdAt).toLocaleDateString()}
+            </span>
+          </div>
         </div>
       ),
     },
-    { header: "Account Type", key: "accountType" },
-    { header: "Phone", key: "phone" },
-    { header: "Email", key: "email" },
-    { header: "Listings/Ads", key: "bids" },
     {
-      header: "Action",
+      header: "Email Verification",
+      render: (item) => (
+        <div className="flex items-center gap-1.5">
+          {item.isVerified ? (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-[#0064AE] border border-blue-100">
+              <ShieldCheck size={12} className="fill-current" />
+              <span className="text-[10px] font-black uppercase tracking-tight">
+                Verified
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 border border-slate-100">
+              <span className="text-[10px] font-black uppercase tracking-tight">
+                Unverified
+              </span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: "Email Address",
+      render: (item) => (
+        <span className="text-xs font-medium text-slate-600 lowercase tracking-tight">
+          {item.email}
+        </span>
+      ),
+    },
+    {
+      header: "Admin Verification",
+      render: (item) => (
+        <div className="flex items-center gap-1.5">
+          {item.isSeller ? (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-[#0064AE] border border-blue-100">
+              <ShieldCheck size={12} className="fill-current" />
+              <span className="text-[10px] font-black uppercase tracking-tight">
+                Verified
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 border border-slate-100">
+              <span className="text-[10px] font-black uppercase tracking-tight">
+                Unverified
+              </span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: "Status",
+      render: (item) => (
+        <div
+          className={`px-2 py-0.5 rounded text-[10px] w-max font-bold uppercase tracking-wider border ${
+            item.isSuspended
+              ? "bg-rose-50 text-rose-600 border-rose-100"
+              : "bg-emerald-50 text-emerald-600 border-emerald-100"
+          }`}
+        >
+          {item.isSuspended ? "Suspended" : "Active"}
+        </div>
+      ),
+    },
+    {
+      header: "Actions",
       render: (item) => (
         <div className="flex items-center gap-2">
           <button
-            onClick={() =>
-              navigate(`/admin/dashboard/sellers/${item.id}`)
-            }
-            className="p-2 rounded-full border border-slate-100 text-slate-400 hover:text-[#0064AE] hover:bg-blue-50 transition-all"
+            onClick={() => {
+              setSelectedSeller(item.id);
+              setIsModalOpen(true);
+            }}
+            className="p-2 cursor-pointer rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-400 hover:text-blue-600 transition-colors"
+            title="View Details"
           >
-            <Eye size={18} strokeWidth={1.5} />
+            <Eye size={16} />
           </button>
-          <button className="p-2 rounded-full border border-slate-100 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
-            <Ban size={18} strokeWidth={1.5} />
+          <button
+            onClick={() => handleQuickSuspension(item.id, item.isSuspended)}
+            className={`p-2 cursor-pointer rounded-lg border border-slate-200 transition-colors ${item.isSuspended ? "text-emerald-500 hover:bg-emerald-50" : "text-amber-500 hover:bg-amber-50"}`}
+            title={item.isSuspended ? "Activate" : "Suspend"}
+          >
+            {item.isSuspended ? <ShieldCheck size={16} /> : <Ban size={16} />}
           </button>
-          <button className="p-2 rounded-full border border-slate-100 text-slate-400 hover:text-slate-700 hover:bg-slate-50 transition-all">
-            <Mail size={18} strokeWidth={1.5} />
+          <button
+            onClick={() => handleQuickDelete(item.id)}
+            className="p-2 cursor-pointer rounded-lg border border-slate-200 text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+            title="Delete"
+          >
+            <Trash2 size={16} />
           </button>
         </div>
       ),
@@ -102,70 +277,74 @@ const navigate = useNavigate()
   ];
 
   return (
-    <div className="p-4 space-y-6  mx-auto">
+    <div className="p-4 space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-          All Sellers
-        </h1>
+        <h2 className="text-xl font-bold text-slate-800 tracking-tight">
+          Seller Management
+        </h2>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* Functional Toolbar */}
-        <div className="px-6 py-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white">
-          <div className="flex items-center gap-3">
-            <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 flex items-center gap-2">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                Status:
-              </span>
-              <Select defaultValue="Active">
-                <SelectTrigger className="!h-8 px-2 text-sm font-semibold text-slate-700 border-none shadow-none bg-transparent focus:ring-0">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        {/* Search & Filter Header */}
+        <div className="p-4 border-b border-slate-100 flex flex-col md:flex-row gap-4 justify-between bg-slate-50/30">
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+              />
+              <input
+                type="text"
+                placeholder="Search sellers..."
+                className="pl-9 pr-4 py-1.5 bg-white border border-slate-200 rounded-lg text-sm w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="flex items-center bg-white border border-slate-200 rounded-lg px-2">
+              <Filter size={14} className="text-slate-400" />
+              <Select onValueChange={setStatusFilter} defaultValue="all">
+                <SelectTrigger className="w-[110px] border-none shadow-none text-xs font-bold h-8 focus:ring-0">
                   <SelectValue />
                 </SelectTrigger>
-
-                <SelectContent align="end">
-                  <SelectItem value="Active">Active Sellers</SelectItem>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="Active">Active</SelectItem>
                   <SelectItem value="Suspended">Suspended</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
+        </div>
 
-          <div className="relative group">
-            <Search
-              size={18}
-              className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-[#0064AE] transition-colors"
-            />
-            <input
-              type="text"
-              placeholder="Search by name or email..."
-              className="bg-slate-50 border border-slate-200 rounded-xl pl-11 pr-4 py-2.5 text-sm w-full md:w-80 outline-none focus:ring-2 focus:ring-[#0064AE]/10 focus:bg-white transition-all text-slate-700 font-medium"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1); // Search korle 1st page-e niye jabe
-              }}
-            />
+        {/* Table Body */}
+        {isLoading ? (
+          <div className="py-20 flex justify-center">
+            <Loader2 className="animate-spin text-blue-500" size={32} />
           </div>
-        </div>
+        ) : isError ? (
+          <div className="py-10 text-center text-rose-500 font-medium">
+            Failed to load seller data.
+          </div>
+        ) : (
+          <CommonTable columns={columns} data={sellers} />
+        )}
 
-        {/* Table Content */}
-        <div className="overflow-x-auto">
-          <CommonTable columns={columns} data={paginatedData} />
-        </div>
-
-        {/* Functional Footer with Pagination */}
-        <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
+        {/* Pagination Footer */}
+        <div className="p-4 border-t border-slate-100 bg-slate-50/30 flex justify-center">
           <CommonPagination
             currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(page) => setCurrentPage(page)}
+            totalPages={meta?.totalPage || 1}
+            onPageChange={setCurrentPage}
           />
         </div>
       </div>
 
-      {/* Modal Integration */}
-
+      <SellerViewModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        userId={selectedSeller}
+      />
     </div>
   );
 };
