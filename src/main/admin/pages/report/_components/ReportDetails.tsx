@@ -1,237 +1,300 @@
-import DangerActions from "@/main/admin/_components/viewUser/DangerActions";
-import InfoRow from "@/main/admin/_components/viewUser/InfoRow";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+import React, { useState } from "react";
 import {
-  Mail,
-  Phone,
-  Camera,
+  useResolveReportMutation,
+  useSuspendAuthMutation,
+} from "@/redux/fetures/admin/report.api";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Loader2,
   ShieldAlert,
-  ArrowUpRight,
+  CheckCircle,
+  Ban,
+  User,
+  Tag,
+  AlertCircle,
   MapPin,
-  ExternalLink,
+  Mail,
   Calendar,
+  Phone,
+  Store,
+  ExternalLink,
 } from "lucide-react";
+import { toast } from "react-toastify";
 
-// 1. Sharp Professional Badge
-const PriorityBadge = ({ level }: { level: "High" | "Medium" | "Low" }) => {
-  const styles = {
-    High: "bg-red-600 text-white",
-    Medium: "bg-orange-500 text-white",
-    Low: "bg-emerald-600 text-white",
+interface ReportActionDialogProps {
+  isOpen: boolean;
+  onClose: () => void;
+  report: any; // backend response data (getReportById)
+  isLoading?: boolean; // API fetching state from parent
+}
+
+const ReportActionDialog = ({
+  isOpen,
+  onClose,
+  report,
+  isLoading,
+}: ReportActionDialogProps) => {
+  const [suspensionReason, setSuspensionReason] = useState("");
+
+  // --- Redux Mutations ---
+  const [resolveReport, { isLoading: isResolving }] =
+    useResolveReportMutation();
+  const [suspendAuth, { isLoading: isSuspending }] = useSuspendAuthMutation();
+
+  if (isLoading) {
+    return (
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[400px] h-[300px] flex flex-col items-center justify-center border-none rounded-[2.5rem] bg-white">
+          <Loader2 className="animate-spin text-[#0064AE]" size={40} />
+          <p className="text-[10px] font-black text-slate-400 mt-4 uppercase tracking-[0.2em]">
+            Loading Report Data...
+          </p>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!report) return null;
+
+  const handleResolve = async () => {
+    try {
+      const res = await resolveReport(report?.id).unwrap();
+      toast.success(res.message || "Incident resolved successfully");
+      onClose(); 
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Failed to resolve report");
+    }
   };
+
+  const handleSuspend = async () => {
+    if (!suspensionReason.trim()) {
+      return toast.warning("Please provide a official reason for suspension");
+    }
+
+    try {
+      const res = await suspendAuth({
+        adId: report?.adId,
+        reason: suspensionReason,
+      }).unwrap();
+
+      toast.success(res.message || "Seller account has been suspended");
+      setSuspensionReason("");
+      onClose();
+    } catch (err: any) {
+      toast.error(err?.data?.message || "Could not suspend user");
+    }
+  };
+
   return (
-    <span
-      className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm ${styles[level]}`}
-    >
-      {level} Priority
-    </span>
-  );
-};
-
-// 2. Data-Centric Insight
-const MarketStatus = () => (
-  <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-lg">
-    <ArrowUpRight size={14} className="text-emerald-600" />
-    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-tight">
-      Market Verified Price
-    </span>
-  </div>
-);
-
-const ReportDetails = () => {
-  return (
-    <div className=" mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-8 text-slate-900">
-      {/* LEFT COLUMN: Admin Audit Section */}
-      <div className="lg:col-span-4 space-y-6">
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-          {/* Subtle Accent Header */}
-          <div className="h-2 bg-[#0064AE]" />
-
-          <div className="p-8">
-            <div className="flex justify-between items-start mb-8">
-              <div className="relative group">
-                <img
-                  src="https://i.pravatar.cc/150?u=etta"
-                  className="w-24 h-24 rounded-2xl border border-slate-100 object-cover shadow-md"
-                />
-                <button className="absolute -bottom-2 -right-2 bg-slate-900 text-white p-1.5 rounded-lg hover:bg-[#0064AE] transition-colors">
-                  <Camera size={14} />
-                </button>
-              </div>
-              <PriorityBadge level="High" />
-            </div>
-
-            <div className="mb-8 pb-6 border-b border-slate-100">
-              <h2 className="text-2xl font-bold tracking-tight">Etta Park</h2>
-              <p className="text-sm font-medium text-slate-500 flex items-center gap-2 mt-1">
-                User ID:{" "}
-                <span className="text-slate-900 font-mono text-xs">
-                  #USR-99210
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[850px] p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl bg-white max-h-[90vh] overflow-y-auto">
+        {/* 🔝 Premium Header */}
+        <div className="bg-[#001B33] p-8 text-white relative">
+          <div className="absolute -right-4 -top-4 opacity-10">
+            <ShieldAlert size={140} />
+          </div>
+          <div className="relative z-10 flex justify-between items-end">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="px-2 py-0.5 bg-rose-600 text-[9px] font-black uppercase tracking-widest rounded-md animate-pulse">
+                  High Priority
                 </span>
+                <span className="text-slate-400 text-[10px] font-mono tracking-tighter">
+                  Case Reference: {report.id}
+                </span>
+              </div>
+              <DialogTitle className="text-2xl font-black tracking-tight uppercase">
+                Administrative Review
+              </DialogTitle>
+            </div>
+            <div className="text-right hidden md:block">
+              <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest mb-1">
+                Current Status
               </p>
-            </div>
-
-            {/* Profile Metrics */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">
-                  Account Status
-                </p>
-                <p className="text-sm font-bold text-emerald-600 mt-0.5">
-                  Verified
-                </p>
-              </div>
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">
-                  Reports Recieved
-                </p>
-                <p className="text-sm font-bold text-rose-600 mt-0.5">
-                  03 Total
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-4 text-left">
-              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider mb-2">
-                Primary Contact
-              </h4>
-              <InfoRow label="Email" value="etta@gmail.com" />
-              <InfoRow label="Phone" value="+1 123 456 789" />
-              <InfoRow label="Address" value="Denver, CO 80122" />
-            </div>
-
-            {/* Admin Audit Message */}
-            <div className="mt-8 p-6 bg-slate-900 rounded-2xl text-white relative">
-              <div className="flex items-center gap-2 mb-3 text-slate-400">
-                <ShieldAlert size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-[0.1em]">
-                  Incident Report
-                </span>
-              </div>
-              <p className="text-sm leading-relaxed font-light text-slate-200">
-                "The seller is unresponsive and the item description doesn't
-                match the condition in photos. Flagged as high-risk listing."
-              </p>
-              <div className="mt-4 flex items-center justify-between text-[10px] font-bold text-slate-500 pt-4 border-t border-slate-800">
-                <span>INCIDENT ID: 88A-02</span>
-                <span className="flex items-center gap-1">
-                  <Calendar size={10} /> 24 MAY, 2026
-                </span>
-              </div>
+              <span
+                className={`px-4 py-1 rounded-full text-[10px] font-black border ${report.status === "PENDING" ? "border-amber-500/30 text-amber-500 bg-amber-500/5" : "border-emerald-500/30 text-emerald-500 bg-emerald-500/5"}`}
+              >
+                {report.status}
+              </span>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* RIGHT COLUMN: Listing Analysis */}
-      <div className="lg:col-span-8 space-y-6">
-        <div className="bg-white rounded-3xl p-10 border border-slate-200 shadow-sm">
-          {/* Listing Metadata */}
-          <div className="flex justify-between items-start mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-slate-900 leading-none">
-                2017 Honda Civic EX
-              </h1>
-              <div className="flex items-center gap-3 mt-3">
-                <p className="text-sm text-slate-500 flex items-center gap-1 font-medium">
-                  <MapPin size={14} className="text-slate-400" /> Forest Hills,
-                  NY
-                </p>
-                <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                <p className="text-sm text-slate-500 font-medium">72K Miles</p>
-              </div>
-            </div>
-            <MarketStatus />
-          </div>
-
-          {/* Professional Gallery Layout */}
-          <div className="grid grid-cols-12 gap-4 h-[400px]">
-            <div className="col-span-8 h-full">
-              <img
-                src="https://images.unsplash.com/photo-1541899481282-d53bffe3c35d?auto=format&fit=crop&q=80&w=800"
-                className="w-full h-full object-cover rounded-2xl border border-slate-200 grayscale-[20%] hover:grayscale-0 transition-all"
-              />
-            </div>
-            <div className="col-span-4 grid grid-rows-3 gap-4 h-full">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="relative overflow-hidden rounded-xl border border-slate-200 group"
-                >
-                  <img
-                    src={`https://via.placeholder.com/300?text=View+Image+${i}`}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                  />
-                  <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* 🛡️ COLUMN 1: Reporter Info */}
+          <div className="space-y-6">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <User size={14} className="text-[#0064AE]" /> Complainant Details
+            </h3>
+            <div className="p-5 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
+              <div className="flex items-center gap-4 mb-4">
+                <img
+                  src={
+                    report?.reporter?.profilePicture ||
+                    "https://i.pravatar.cc/100"
+                  }
+                  className="w-12 h-12 rounded-2xl object-cover ring-4 ring-white shadow-sm"
+                  alt="Reporter"
+                />
+                <div>
+                  <h4 className="text-sm font-black text-slate-900 leading-none mb-1">
+                    {report?.reporter?.nickName}
+                  </h4>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
+                    Verified Reporter
+                  </p>
                 </div>
-              ))}
+              </div>
+              <div className="space-y-3 pt-3 border-t border-slate-200/60 text-[11px] text-slate-600 font-medium">
+                <p className="flex items-center gap-2">
+                  <Mail size={12} className="text-slate-400" />{" "}
+                  {report?.reporter?.email}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Phone size={12} className="text-slate-400" />{" "}
+                  {report?.reporter?.phone || "Phone not provided"}
+                </p>
+                <p className="flex items-center gap-2">
+                  <Calendar size={12} className="text-slate-400" /> Joined:{" "}
+                  {new Date(report?.reporter?.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-5 bg-rose-50/50 rounded-[2rem] border border-rose-100 relative group transition-all hover:bg-rose-50">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertCircle size={14} className="text-rose-500" />
+                <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">
+                  Allegation: {report.reason}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 font-semibold italic leading-relaxed">
+                "{report.description || "No detailed description provided."}"
+              </p>
             </div>
           </div>
 
-          {/* Financials & Action Section */}
-          <div className="mt-10 pt-10 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-            <div className="p-8 bg-slate-50 rounded-2xl border border-slate-200">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
-                Highest Bid Evaluation
-              </p>
-              <div className="flex items-baseline gap-2">
-                <h2 className="text-5xl font-black text-slate-900">$13,200</h2>
-                <span className="text-sm font-bold text-slate-400">USD</span>
+          {/* 🏷️ COLUMN 2: Evidence & Seller */}
+          <div className="space-y-6">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Tag size={14} className="text-[#0064AE]" /> Target Listing
+            </h3>
+            <div className="rounded-[2rem] overflow-hidden border border-slate-100 shadow-lg bg-white group relative">
+              <div className="relative h-36 overflow-hidden">
+                <img
+                  src={
+                    report?.ad?.images?.[0]?.url ||
+                    "https://via.placeholder.com/400x200"
+                  }
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                  alt="Ad"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-3 left-4">
+                  <p className="text-[10px] text-white/70 font-bold uppercase tracking-widest">
+                    Listing Price
+                  </p>
+                  <p className="text-lg font-black text-white">
+                    ${report?.ad?.price?.toLocaleString()}
+                  </p>
+                </div>
+                <a
+                  href={`/item-details/${report?.adId}`}
+                  target="_blank"
+                  className="absolute top-3 right-3 p-2.5 bg-white/90 backdrop-blur-md rounded-xl text-[#0064AE] hover:bg-[#0064AE] hover:text-white transition-all shadow-xl"
+                  title="View Live Ad"
+                >
+                  <ExternalLink size={16} strokeWidth={3} />
+                </a>
               </div>
+              <div className="p-5">
+                <h4 className="text-xs font-black text-slate-900 truncate mb-2">
+                  {report?.ad?.title}
+                </h4>
+                <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold">
+                  <MapPin size={10} /> {report?.ad?.city}, {report?.ad?.state}
+                </div>
+              </div>
+            </div>
+
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              <Store size={14} className="text-[#0064AE]" /> Seller Identity
+            </h3>
+            <div className="flex items-center gap-4 p-4 bg-indigo-50/40 rounded-[1.5rem] border border-indigo-100">
+              <img
+                src={
+                  report?.ad?.seller?.profilePicture ||
+                  "https://i.pravatar.cc/100"
+                }
+                className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+                alt="Seller"
+              />
+              <div>
+                <h4 className="text-[12px] font-black text-slate-900 leading-none mb-1">
+                  {report?.ad?.seller?.nickName}
+                </h4>
+                <p className="text-[9px] text-indigo-500 font-black uppercase tracking-tighter italic">
+                  Pending Investigation
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 🛠️ COLUMN 3: Admin Actions */}
+          <div className="space-y-6 col-span-2 bg-slate-50/80 p-6 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+            <div>
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 block text-center">
+                Enforcement Command
+              </label>
+              <textarea
+                value={suspensionReason}
+                onChange={(e) => setSuspensionReason(e.target.value)}
+                placeholder="State the official reason for account suspension..."
+                className="w-full px-5 py-5 bg-white border border-slate-200 rounded-[1.5rem] text-xs min-h-[140px] focus:ring-4 focus:ring-[#0064AE]/10 transition-all outline-none resize-none shadow-sm placeholder:text-slate-300 font-medium"
+              />
             </div>
 
             <div className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500 font-medium tracking-tight">
-                  Listing Reference
-                </span>
-                <span className="font-bold text-slate-900">RF-651011</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-500 font-medium tracking-tight">
-                  Market Average
-                </span>
-                <span className="font-bold text-slate-900">$14,800</span>
-              </div>
-              <button className="w-full flex items-center justify-center gap-2 py-3 bg-white border border-slate-900 text-slate-900 rounded-xl text-xs font-bold uppercase hover:bg-slate-900 hover:text-white transition-all">
-                <ExternalLink size={14} /> View Original Listing
+              <button
+                onClick={handleSuspend}
+                disabled={isSuspending}
+                className="w-full py-4 cursor-pointer bg-rose-600 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-xl shadow-rose-200 hover:bg-rose-700 transition-all flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+              >
+                {isSuspending ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Ban size={16} strokeWidth={2.5} />
+                )}
+                Execute Suspension
               </button>
-            </div>
-          </div>
 
-          {/* Seller Snapshot Overlay */}
-          <div className="mt-8 flex items-center justify-between p-6 bg-slate-50 border border-slate-100 rounded-2xl">
-            <div className="flex items-center gap-4">
-              <img
-                src="https://i.pravatar.cc/150?u=annette"
-                className="w-12 h-12 rounded-xl border border-white shadow-sm"
-              />
-              <div>
-                <h4 className="text-sm font-bold text-slate-900">
-                  Annette Black
-                </h4>
-                <p className="text-[11px] font-medium text-slate-500 tracking-tight">
-                  Business Seller • Rating: 4.8 / 5.0
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button className="p-2.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:border-slate-400">
-                <Mail size={16} />
-              </button>
-              <button className="p-2.5 bg-white border border-slate-200 rounded-lg text-slate-600 hover:border-slate-400">
-                <Phone size={16} />
+              <button
+                onClick={handleResolve}
+                disabled={isResolving || report.status === "RESOLVED"}
+                className="w-full cursor-pointer py-4 disabled:cursor-not-allowed bg-white border border-slate-200 text-slate-600 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isResolving ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <CheckCircle size={16} strokeWidth={2.5} />
+                )}
+                {report.status === "RESOLVED"
+                  ? "Report Resolved"
+                  : "Dismiss & Resolve"}
               </button>
             </div>
-          </div>
 
-          {/* Admin Command Zone */}
-          <div className="mt-12 pt-8 border-t border-slate-100">
-            <DangerActions label="Listing" />
+            <p className="text-[9px] text-slate-400 text-center font-bold px-4 leading-relaxed italic">
+              * Action will be recorded in system logs and the seller will be
+              notified.
+            </p>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
-export default ReportDetails;
+export default ReportActionDialog;

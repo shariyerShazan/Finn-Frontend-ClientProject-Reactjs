@@ -1,158 +1,231 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import  { useState, useMemo } from "react";
-import CommonPagination from "@/main/user/_components/CommonPagination";
+import { useState } from "react";
 import CommonTable, { type Column } from "@/main/user/_components/CustomTable";
-import { Eye, Ban, Mail, Search } from "lucide-react";
+import { Eye, Ban, Trash2, ShieldCheck, ShieldAlert, Verified } from "lucide-react";
 import AdminStat from "./_components/AdminStats";
-import ViewUser from "./_components/ViewUser";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface UserData {
-  id: number;
-  name: string;
-  accountType: "Seller" | "Buyer";
-  phone: string;
-  email: string;
-  bids: number;
-  image: string;
-}
-
-const ITEMS_PER_PAGE = 5;
+// import UserViewModal from "./_components/UserViewModal"; // আপনার তৈরি করা সেই মডাল
+import { useDeleteSellerMutation, useGetRecentUsersQuery, useToggleSuspensionMutation } from "@/redux/fetures/admin/admin.api";
+import UserViewModal from "./_components/UserViewModal";
+import { toast } from "react-toastify";
+import Swal from "sweetalert2";
 
 const AdminOverview = () => {
-  // --- States ---
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<"All" | "Seller" | "Buyer">(
-    "All",
-  );
-  const [currentPage, setCurrentPage] = useState(1);
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // --- Raw Data ---
-  const rawData: UserData[] = [
-    {
-      id: 1,
-      name: "Sam Abid",
-      accountType: "Seller",
-      phone: "+123456709",
-      email: "abid@email.com",
-      bids: 65,
-      image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sam",
-    },
-    {
-      id: 2,
-      name: "Avah Shelton",
-      accountType: "Seller",
-      phone: "+123456709",
-      email: "avah@email.com",
-      bids: 26,
-      image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Avah",
-    },
-    {
-      id: 3,
-      name: "Eliza Boone",
-      accountType: "Buyer",
-      phone: "+123456709",
-      email: "eliza@email.com",
-      bids: 39,
-      image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Eliza",
-    },
-    {
-      id: 4,
-      name: "Lian Morrow",
-      accountType: "Buyer",
-      phone: "+123456709",
-      email: "lian@email.com",
-      bids: 55,
-      image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Lian",
-    },
-    {
-      id: 5,
-      name: "Rey Hardy",
-      accountType: "Buyer",
-      phone: "+123456709",
-      email: "rey@email.com",
-      bids: 49,
-      image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rey",
-    },
-    {
-      id: 6,
-      name: "Zora Barr",
-      accountType: "Buyer",
-      phone: "+123456709",
-      email: "zora@email.com",
-      bids: 103,
-      image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Zora",
-    },
-    {
-      id: 7,
-      name: "Mathew Soto",
-      accountType: "Seller",
-      phone: "+123456709",
-      email: "mathew@email.com",
-      bids: 258,
-      image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mathew",
-    },
-  ];
+  // RTK Query to fetch 5 recent users
+  const { data: response } = useGetRecentUsersQuery(undefined);
+  const recentUsers = response?.data || [];
 
-  // --- Logic: Search & Filter ---
-  const filteredData = useMemo(() => {
-    return rawData.filter((user) => {
-      const matchesSearch =
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesFilter =
-        filterType === "All" || user.accountType === filterType;
-      return matchesSearch && matchesFilter;
-    });
-  }, [searchTerm, filterType]);
-
-  // --- Logic: Pagination ---
-  const totalPages = Math.ceil(filteredData.length / ITEMS_PER_PAGE);
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredData.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredData, currentPage]);
-
-  const handleViewDetails = (user: UserData) => {
-    setSelectedUser(user);
+  const handleViewDetails = (id: string) => {
+    setSelectedUserId(id);
     setIsModalOpen(true);
   };
 
-  const columns: Column<UserData>[] = [
+
+  const handleQuickDelete = async (id: string) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "User account will be permanently deleted!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#64748b",
+      confirmButtonText: "Yes, delete it!",
+      customClass: { popup: "rounded-xl" },
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await deleteUser(id).unwrap();
+          Swal.fire({
+            title: "Deleted!",
+            icon: "success",
+            timer: 1500,
+            showConfirmButton: false,
+            customClass: { popup: "rounded-xl" },
+          });
+        } catch (err) {
+          console.log(err);
+          toast.error("Operation failed.");
+        }
+      }
+    });
+  };
+  const [deleteUser] = useDeleteSellerMutation();
+  const [toggleSuspension] = useToggleSuspensionMutation();
+  const handleQuickSuspension = async (
+    id: string,
+    isCurrentlySuspended: boolean,
+  ) => {
+    if (isCurrentlySuspended) {
+      Swal.fire({
+        title: "Reactivate User?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "#10b981",
+        confirmButtonText: "Yes, activate!",
+        customClass: { popup: "rounded-xl" },
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            await toggleSuspension({ userId: id, reason: "" }).unwrap();
+            toast.success("User Restored");
+          } catch (err) {
+            console.log(err);
+            toast.error("Action failed");
+          }
+        }
+      });
+    } else {
+      const { value: reason } = await Swal.fire({
+        title: "Suspension Reason",
+        input: "textarea",
+        showCancelButton: true,
+        confirmButtonColor: "#f59e0b",
+        confirmButtonText: "Suspend Now",
+        customClass: { popup: "rounded-xl" },
+        inputValidator: (value) => {
+          if (!value) return "Reason is required!";
+        },
+      });
+      if (reason) {
+        try {
+          await toggleSuspension({ userId: id, reason }).unwrap();
+          toast.success("User Suspended");
+        } catch (err) {
+          console.log(err);
+          toast.error("Action failed");
+        }
+      }
+    }
+  };
+
+  const columns: Column<any>[] = [
     {
-      header: "Name",
+      header: "User / Identity",
       render: (item) => (
         <div className="flex items-center gap-3">
-          <img
-            src={item.image}
-            alt=""
-            className="w-10 h-10 rounded-full border border-slate-200"
-          />
-          <span className="font-medium text-slate-700">{item.name}</span>
+          <div className="relative">
+            <img
+              src={
+                item.profilePicture ||
+                `https://api.dicebear.com/7.x/initials/svg?seed=${item.nickName}`
+              }
+              className="w-10 h-10 rounded-xl object-cover border border-slate-100"
+            />
+            <div
+              className={`absolute -right-1 -bottom-1 p-0.5 rounded-full border border-white ${item.isVerified ? "bg-blue-500" : "bg-amber-500"}`}
+            >
+              {item.isVerified ? (
+                <ShieldCheck size={10} className="text-white" />
+              ) : (
+                <ShieldAlert size={10} className="text-white" />
+              )}
+            </div>
+          </div>
+          <div>
+            <p className="font-bold text-slate-800 text-sm leading-none">
+              {item.firstName} {item.lastName}
+            </p>
+            <p className="text-[10px] font-medium text-slate-400 mt-1 uppercase">
+              @{item.nickName}
+            </p>
+          </div>
         </div>
       ),
     },
-    { header: "Account Type", key: "accountType" },
-    { header: "Phone", key: "phone" },
-    { header: "Email", key: "email" },
-    { header: "Bid/Auction", key: "bids" },
+    {
+      header: "Email Verification",
+      render: (item) => (
+        <div className="flex items-center gap-1.5">
+          {item.isVerified ? (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-[#0064AE] border border-blue-100">
+              <ShieldCheck size={12} className="fill-current" />
+              <span className="text-[10px] font-black uppercase tracking-tight">
+                Verified
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 border border-slate-100">
+              <span className="text-[10px] font-black uppercase tracking-tight">
+                Unverified
+              </span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: "Email Address",
+      render: (item) => (
+        <span className="text-xs font-medium text-slate-600 lowercase">
+          {item.email}
+        </span>
+      ),
+    },
+    {
+      header: "Role",
+      render: (item) => (
+        <span
+          className={`px-2 flex gap-2 w-max py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${item.role == "SELLER" ? "bg-purple-100 text-purple-600" : "bg-blue-100 text-blue-600"}`}
+        >
+          {item.role == "SELLER" ? "Seller" : "Buyer"}
+          {item.isSeller && (
+            <p>
+              <Verified size={12} />
+            </p>
+          )}
+        </span>
+      ),
+    },
+    {
+      header: "Registered Date",
+      render: (item) => (
+        <span className="text-xs font-semibold text-slate-600">
+          {new Date(item.createdAt).toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}
+        </span>
+      ),
+    },
+    {
+      header: "Status",
+      render: (item) => (
+        <div
+          className={`px-2 py-0.5 rounded text-[10px] w-max font-bold uppercase tracking-wider border ${
+            item.isSuspended
+              ? "bg-rose-50 text-rose-600 border-rose-100"
+              : "bg-emerald-50 text-emerald-600 border-emerald-100"
+          }`}
+        >
+          {item.isSuspended ? "Suspended" : "Active"}
+        </div>
+      ),
+    },
     {
       header: "Action",
       render: (item) => (
         <div className="flex items-center gap-2">
           <button
-            onClick={() => handleViewDetails(item)}
-            className="p-1.5 rounded-full border border-slate-200 text-slate-400 hover:text-[#0064AE] hover:bg-blue-50 transition-all"
+            onClick={() => handleViewDetails(item.id)}
+            className="p-2 cursor-pointer rounded-lg border border-slate-200 text-slate-400 hover:text-[#0064AE] hover:bg-blue-50 transition-all"
+            title="View Details"
           >
-            <Eye size={18} strokeWidth={1.5} />
+            <Eye size={16} />
           </button>
-          <button className="p-1.5 rounded-full border border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-all">
-            <Ban size={18} strokeWidth={1.5} />
+          <button
+            onClick={() => handleQuickSuspension(item.id, item.isSuspended)}
+            className={`p-2 cursor-pointer rounded-lg border border-slate-200 transition-colors ${item.isSuspended ? "text-emerald-500 hover:bg-emerald-50" : "text-amber-500 hover:bg-amber-50"}`}
+          >
+            {item.isSuspended ? <ShieldCheck size={16} /> : <Ban size={16} />}
           </button>
-          <button className="p-1.5 rounded-full border border-slate-200 text-slate-400 hover:text-slate-700 transition-all">
-            <Mail size={18} strokeWidth={1.5} />
+          <button
+            onClick={() => handleQuickDelete(item.id)}
+            className="p-2 cursor-pointer rounded-lg border border-slate-200 text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors"
+          >
+            <Trash2 size={16} />
           </button>
         </div>
       ),
@@ -160,77 +233,42 @@ const AdminOverview = () => {
   ];
 
   return (
-    <div className="p-4 space-y-6 mx-auto">
-      <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
-        Hello, Annette Black!
-      </h1>
+    <div className="p-4 space-y-8 mx-auto ">
+      <div>
+        <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          System Overview
+        </h1>
+        <p className="text-sm font-medium text-slate-500">
+          Real-time statistics and recently joined members.
+        </p>
+      </div>
 
       <AdminStat />
 
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* --- Functional Toolbar --- */}
-        <div className="px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100">
-          <div className="text-[#0064AE] font-bold border-b-2 border-[#0064AE] pb-4 -mb-4 z-10">
-            Recently Registered
-          </div>
-
-          <div className="flex items-center gap-3 self-end">
-            {/* Filter Dropdown */}
-            <Select
-              value={filterType}
-              onValueChange={(value) => {
-                setFilterType(value as any);
-                setCurrentPage(1);
-              }}
-            >
-              <SelectTrigger className="w-[160px] h-9 text-sm font-medium border-slate-200 focus:ring-2 focus:ring-[#0064AE]/10">
-                <SelectValue placeholder="Filter users" />
-              </SelectTrigger>
-
-              <SelectContent>
-                <SelectItem value="All">All Users</SelectItem>
-                <SelectItem value="Seller">Sellers</SelectItem>
-                <SelectItem value="Buyer">Buyers</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Functional Search */}
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-md focus-within:bg-white focus-within:ring-2 focus-within:ring-[#0064AE]/10 transition-all">
-              <Search size={14} className="text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="bg-transparent outline-none text-sm w-48 text-slate-700 placeholder:text-slate-400"
-              />
-            </div>
-
-            {/* <button className="bg-[#0064AE] text-white px-4 py-1.5 rounded-md text-sm font-bold hover:bg-[#004f8b] shadow-sm active:scale-95 transition-all">
-              Add Manually +
-            </button> */}
-          </div>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-5 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="text-sm font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+            Recently Registered{" "}
+            <span className="text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full text-[10px]">
+              Latest 5
+            </span>
+          </h3>
         </div>
 
-        <CommonTable columns={columns} data={paginatedData} />
-
-        <div className="p-4 bg-slate-50/30 border-t border-slate-100 flex justify-between items-center">
-          <CommonPagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(p) => setCurrentPage(p)}
-          />
-        </div>
+        <CommonTable
+          columns={columns}
+          data={recentUsers}
+          // isLoading={isLoading}
+        />
       </div>
 
-      {/* Modal - Make sure this component uses shadcn Dialog correctly */}
-      <ViewUser
-        user={selectedUser}
+      <UserViewModal
+        userId={selectedUserId}
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedUserId("");
+        }}
       />
     </div>
   );

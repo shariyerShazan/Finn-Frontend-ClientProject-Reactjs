@@ -11,6 +11,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useVerifyOtpMutation, type VerifyOtpRequest } from '@/redux/fetures/auth.api';
 import { toast } from 'react-toastify';
+import loginImg from "@/assets/Login/login.jpg";
 
 const VerifyRegisterOtp = () => {
   const navigate = useNavigate();
@@ -46,22 +47,32 @@ const onSubmit = async (data: VerifyOtpRequest) => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <main className="max-w-5xl w-full grid md:grid-cols-2 gap-8 items-center">
         <div className="rounded-3xl overflow-hidden hidden md:block shadow-sm">
-          <img src="/hero-image.jpg" alt="ByBench Hero" className="w-full h-[450px] object-cover" />
+          <img
+            src={loginImg}
+            alt="ByBench Hero"
+            className="w-full h-[450px] object-cover"
+          />
         </div>
 
         <Card className="border-none shadow-sm rounded-[32px] p-8 bg-white">
           <CardContent className="space-y-6 flex flex-col items-center text-center">
             <div className="flex items-center text-xl font-bold mb-4">
               <span className="text-zinc-800">by</span>
-              <span className="bg-[#0064AE] text-white px-1.5 py-0.5 rounded-md ml-1">Bench</span>
+              <span className="bg-[#0064AE] text-white px-1.5 py-0.5 rounded-md ml-1">
+                Bench
+              </span>
             </div>
 
             <h1 className="text-2xl font-bold text-zinc-900">OTP Required</h1>
             <p className="text-zinc-500 text-sm max-w-[280px]">
-              Enter the 6 digits OTP code we've sent to your email <span className="font-semibold text-zinc-800">{email}</span>
+              Enter the 6 digits OTP code we've sent to your email{" "}
+              <span className="font-semibold text-zinc-800">{email}</span>
             </p>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 w-full flex flex-col items-center">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="space-y-8 w-full flex flex-col items-center"
+            >
               <Controller
                 name="otp"
                 control={control}
@@ -70,9 +81,9 @@ const onSubmit = async (data: VerifyOtpRequest) => {
                   <InputOTP maxLength={6} {...field}>
                     <InputOTPGroup className="gap-2">
                       {[0, 1, 2, 3, 4, 5].map((index) => (
-                        <InputOTPSlot 
-                          key={index} 
-                          index={index} 
+                        <InputOTPSlot
+                          key={index}
+                          index={index}
                           className="w-12 h-12 bg-zinc-100 border-none rounded-lg text-lg font-semibold"
                         />
                       ))}
@@ -81,10 +92,10 @@ const onSubmit = async (data: VerifyOtpRequest) => {
                 )}
               />
 
-              <Button 
+              <Button
                 disabled={isLoading}
-                type="submit" 
-                className="w-32 bg-[#0064AE] hover:bg-[#005494] text-white py-6 rounded-xl font-semibold"
+                type="submit"
+                className="w-32 cursor-pointer bg-[#0064AE] hover:bg-[#005494] text-white py-6 rounded-xl font-semibold"
               >
                 {isLoading ? <Loader2 className="animate-spin" /> : "Verify"}
               </Button>

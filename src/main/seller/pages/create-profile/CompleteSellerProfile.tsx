@@ -176,7 +176,7 @@ const onSubmit = async (data: SellerProfileForm) => {
             <Button
               disabled={isLoading}
               type="submit"
-              className="w-full bg-[#0064AE] hover:bg-[#005494] text-white py-6 text-lg font-semibold rounded-xl mt-4"
+              className="w-full cursor-pointer bg-[#0064AE] hover:bg-[#005494] text-white py-6 text-lg font-semibold rounded-xl mt-4"
             >
               {isLoading ? (
                 <Loader2 className="animate-spin mr-2" />
