@@ -1,6 +1,12 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { LayoutGrid, CheckCircle2, Eye, Loader2 } from "lucide-react";
-// import { MdPayments } from "react-icons/md";
+import {
+  LayoutGrid,
+  // CheckCircle2,
+  Eye,
+  Loader2,
+  // TrendingUp,
+  PackageCheck,
+  Zap,
+} from "lucide-react";
 import { useGetSellerStatsQuery } from "@/redux/fetures/users.api";
 
 const SellerStats = () => {
@@ -8,8 +14,13 @@ const SellerStats = () => {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-10">
-        <Loader2 className="animate-spin text-blue-600" size={32} />
+      <div className="h-40 flex items-center justify-center bg-slate-50/50 rounded-[32px] border-2 border-dashed border-slate-200">
+        <div className="flex flex-col items-center gap-2">
+          <Loader2 className="animate-spin text-[#0064AE]" size={32} />
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">
+            Loading Your Stats...
+          </p>
+        </div>
       </div>
     );
   }
@@ -18,53 +29,71 @@ const SellerStats = () => {
 
   const stats = [
     {
-      label: statsData.totalAds || 0,
-      subLabel: "Total Ads",
+      label: "Total Ads",
+      val: statsData.totalAds || 0,
+      gradient: "from-emerald-50 to-white",
+      iconBg: "bg-emerald-600",
       icon: LayoutGrid,
-      color: "text-green-600",
-      bg: "bg-green-50",
-    },
-    // {
-    //   label: `$${(statsData.totalIncome || 0).toLocaleString()}`,
-    //   subLabel: "Total Income",
-    //   icon: MdPayments,
-    //   color: "text-indigo-600",
-    //   bg: "bg-indigo-50",
-    // },
-    {
-      label: statsData.itemSold || 0,
-      subLabel: "Item Sold",
-      icon: CheckCircle2,
-      color: "text-red-500",
-      bg: "bg-red-50",
     },
     {
-      label: statsData.totalAdsViewed || 0,
-      subLabel: "Total Ads Viewed",
+      label: "Items Sold",
+      val: statsData.itemSold || 0,
+      gradient: "from-blue-50 to-white",
+      iconBg: "bg-blue-600",
+      icon: PackageCheck,
+    },
+    {
+      label: "Ads Views",
+      val: (statsData.totalAdsViewed || 0).toLocaleString(),
+      gradient: "from-purple-50 to-white",
+      iconBg: "bg-purple-600",
       icon: Eye,
-      color: "text-blue-500",
-      bg: "bg-blue-50",
+    },
+    {
+      label: "Active Boosts",
+      val: statsData.activeBoosts || 0, // আপনার API অনুযায়ী ফিল্ড নেম চেক করে নিন
+      gradient: "from-orange-50 to-white",
+      iconBg: "bg-orange-500",
+      icon: Zap,
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {stats.map((stat, index) => (
-        <Card key={index} className="border-none shadow-sm">
-          <CardContent className="flex items-center p-6 gap-4">
-            <div className={`p-3 rounded-xl ${stat.bg}`}>
-              <stat.icon className={`w-6 h-6 ${stat.color}`} />
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      {stats.map((stat, i) => (
+        <div
+          key={i}
+          className={`bg-gradient-to-br ${stat.gradient} p-6 rounded-[28px] border border-slate-200 shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1 group relative overflow-hidden`}
+        >
+          {/* Background Decorative Icon */}
+          <stat.icon
+            className="absolute -right-4 -bottom-4 text-slate-200/30 rotate-12 group-hover:rotate-0 transition-transform duration-500"
+            size={90}
+          />
+
+          <div className="flex items-center gap-5 relative z-10">
+            <div
+              className={`${stat.iconBg} text-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}
+            >
+              <stat.icon size={26} />
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-slate-800">
-                {stat.label}
+              <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none mb-1.5">
+                {stat.val}
               </h3>
-              <p className="text-sm text-slate-500 font-medium">
-                {stat.subLabel}
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.1em]">
+                {stat.label}
               </p>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+
+          {/* Progress Mini-indicator */}
+          <div className="mt-4 w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+            <div
+              className={`h-full ${stat.iconBg} opacity-20 w-2/3 animate-pulse`}
+            />
+          </div>
+        </div>
       ))}
     </div>
   );
